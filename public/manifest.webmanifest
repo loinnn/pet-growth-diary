@@ -2,7 +2,7 @@
   "name": "萌宠成长记",
   "short_name": "萌宠成长",
   "description": "陪伴你的电子宠物一起成长",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#FDFCF0",
   "theme_color": "#3B82F6",
