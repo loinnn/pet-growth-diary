@@ -1,0 +1,227 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Star } from 'lucide-react';
+import { PetType } from '../types';
+import { PET_TEMPLATES } from '../constants';
+
+interface PetAvatarProps {
+  type: PetType;
+  level: number;
+  hunger: number;
+  happiness: number;
+  isEating?: boolean;
+  isPlaying?: boolean;
+  outfit: string[];
+}
+
+export const PetAvatar: React.FC<PetAvatarProps> = ({ 
+  type, 
+  level, 
+  hunger, 
+  happiness, 
+  isEating, 
+  isPlaying, 
+  outfit 
+}) => {
+  const template = PET_TEMPLATES[type];
+  
+  // Evolution Stage
+  let stageIndex = 0;
+  if (level >= 8) stageIndex = 2;
+  else if (level >= 4) stageIndex = 1;
+  
+  const currentIcon = template.stages[stageIndex];
+  
+  // Emotion logic
+  const isSad = hunger < 30 || happiness < 30;
+  const isHappy = happiness > 70;
+
+  // Proportions - compact and cute
+  const characterScale = 1.0 + (level * 0.02);
+  const headSize = 140 + (level * 2);
+  const bodySize = 100 + (level * 3);
+
+  return (
+    <div className="relative flex flex-col items-center justify-center w-72 h-[380px]">
+      {/* Background Glow - Very soft */}
+      <motion.div
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.05, 0.15, 0.05],
+        }}
+        transition={{ duration: 6, repeat: Infinity }}
+        className="absolute inset-0 rounded-full blur-[60px]"
+        style={{ backgroundColor: template.color }}
+      />
+
+      {/* Thought Bubble - Minimalist */}
+      <AnimatePresence>
+        {(isSad || isHappy || hunger < 40) && !isEating && !isPlaying && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-2xl shadow-md border border-white/50 flex items-center">
+              <span className="text-lg">
+                {hunger < 40 ? '🍕' : isSad ? '😢' : '❤️'}
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Character Container */}
+      <motion.div
+        animate={
+          isEating 
+            ? { y: [0, -8, 0], scale: [1, 1.02, 1] } 
+            : isPlaying 
+            ? { y: [0, -50, 0], rotate: [0, -3, 3, 0] }
+            : { y: [0, -5, 0] }
+        }
+        transition={{ 
+          duration: isEating ? 0.3 : isPlaying ? 0.5 : 4, 
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="relative z-10 flex flex-col items-center"
+        style={{ transform: `scale(${characterScale})` }}
+      >
+        {/* Head - The Animal itself */}
+        <div 
+          className="relative rounded-full shadow-xl z-20 flex items-center justify-center border-[4px] border-white/30" 
+          style={{ 
+            width: `${headSize}px`, 
+            height: `${headSize}px`, 
+            backgroundColor: template.color 
+          }}
+        >
+          {/* Animal Icon - Large and centered */}
+          <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-90 select-none filter drop-shadow-lg z-10">
+            {currentIcon}
+          </div>
+
+          {/* Simple Face Overlay - To make it more expressive */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+            {/* Eyes - Simple dots */}
+            <div className="flex space-x-12 mb-2 mt-6">
+              {[0, 1].map((i) => (
+                <div key={i} className="relative">
+                  {isHappy ? (
+                    <div className="text-3xl font-black text-black/40">^</div>
+                  ) : isSad ? (
+                    <div className="text-3xl font-black text-black/40">U</div>
+                  ) : (
+                    <motion.div 
+                      animate={{ scaleY: [1, 1, 0, 1, 1] }}
+                      transition={{ duration: 5, repeat: Infinity, times: [0, 0.9, 0.92, 0.94, 1] }}
+                      className="w-4 h-4 bg-black/30 rounded-full"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Blush */}
+            <AnimatePresence>
+              {isHappy && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.4 }}
+                  className="absolute flex justify-between w-32 px-4"
+                >
+                  <div className="w-6 h-3 bg-pink-400 rounded-full blur-[2px]" />
+                  <div className="w-6 h-3 bg-pink-400 rounded-full blur-[2px]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Outfit: Glasses */}
+          {outfit.includes('i3') && <div className="absolute top-16 text-7xl z-30 filter drop-shadow-md">🕶️</div>}
+          {/* Outfit: Hats */}
+          {outfit.includes('i4') && <div className="absolute -top-12 text-8xl z-30 drop-shadow-lg">👒</div>}
+          {outfit.includes('i9') && <div className="absolute -top-16 text-8xl z-30 drop-shadow-lg">👑</div>}
+        </div>
+
+        {/* Torso - Simple Shirt/Hoodie */}
+        <div 
+          className="relative w-32 shadow-lg z-10 rounded-t-[30px] rounded-b-[20px] -mt-4 flex flex-col items-center border-[4px] border-white/20 overflow-hidden" 
+          style={{ height: `${bodySize}px`, backgroundColor: template.color, filter: 'brightness(0.95)' }}
+        >
+          {/* Shirt/Clothing Layer */}
+          <div className="absolute inset-x-0 top-0 h-full bg-white/30 flex flex-col items-center">
+            <div className="w-full h-1/3 bg-white/20 border-b border-white/10" />
+            <div className="text-xl opacity-30 mt-4">✨</div>
+          </div>
+
+          {/* Outfit: Cloak */}
+          {outfit.includes('i10') && (
+            <div className="absolute inset-0 bg-red-500/40 border-t-[15px] border-red-400/50 rounded-t-[30px]" />
+          )}
+
+          {/* Outfit: Bow */}
+          {outfit.includes('i5') && <div className="absolute -top-3 text-6xl z-30 filter drop-shadow-md">🎀</div>}
+        </div>
+
+        {/* Arms - Simple Paws */}
+        <motion.div 
+          animate={isPlaying ? { rotate: [0, 140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, 10, 0] }}
+          transition={{ duration: 0.4, repeat: Infinity }}
+          className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10"
+          style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
+        >
+          {outfit.includes('i6') && <span className="absolute -bottom-8 -left-6 text-6xl transform -rotate-15">🪄</span>}
+        </motion.div>
+        
+        <motion.div 
+          animate={isPlaying ? { rotate: [0, -140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, -10, 0] }}
+          transition={{ duration: 0.4, repeat: Infinity }}
+          className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10"
+          style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
+        >
+          {outfit.includes('i11') && <span className="absolute -top-12 -right-8 text-6xl">🎈</span>}
+        </motion.div>
+
+        {/* Legs - Simple Stubs */}
+        <div className="flex space-x-16 -mt-6">
+          {[0, 1].map((i) => (
+            <motion.div 
+              key={i}
+              animate={isPlaying ? { y: [0, -15, 0] } : {}}
+              transition={{ delay: i * 0.1 }}
+              className="w-12 h-10 rounded-b-xl shadow-md border-x-2 border-white/10" 
+              style={{ backgroundColor: template.color, filter: 'brightness(0.85)' }}
+            />
+          ))}
+        </div>
+
+        {/* Level Badge - Minimalist */}
+        <motion.div 
+          animate={{ y: [0, -3, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity }}
+          className="absolute -top-6 -right-12 bg-white/90 backdrop-blur-sm text-gray-700 text-[10px] font-black px-3 py-1 rounded-full shadow-sm border border-gray-100 z-40 flex items-center space-x-1"
+        >
+          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+          <span>LV.{level}</span>
+        </motion.div>
+      </motion.div>
+
+      {/* Shadow - Subtle */}
+      <motion.div
+        animate={{ 
+          scaleX: isPlaying ? [1, 0.5, 1] : [1, 1.2, 1], 
+          opacity: [0.15, 0.05, 0.15] 
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute bottom-8 w-48 h-8 bg-black/10 rounded-full blur-[20px]"
+      />
+
+      {/* Stage Label - Minimalist */}
+      <div className="absolute bottom-0 bg-white/60 backdrop-blur-sm px-6 py-2 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest border border-white/40">
+        {level >= 8 ? '🌟 终极形态' : level >= 4 ? '🌈 成长期' : '🐣 幼年期'}
+      </div>
+    </div>
+  );
+};
