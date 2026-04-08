@@ -20,7 +20,7 @@ export interface Task {
   description: string;
   points: number;
   icon: string;
-  category: 'study' | 'chore' | 'habit';
+  category: 'life' | 'habit' | 'learning' | 'emotion';
 }
 
 export interface Item {

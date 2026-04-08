@@ -147,13 +147,19 @@ export default function App() {
 
   const playWithPet = () => {
     if (!pet) return;
+    if (points < 5) {
+      alert('积分不够陪它玩哦，快去完成任务吧！');
+      return;
+    }
+    
+    setPoints(prev => prev - 5);
     setIsActionAnimating(prev => ({ ...prev, playing: true }));
     setTimeout(() => setIsActionAnimating(prev => ({ ...prev, playing: false })), 2000);
     
     setPet({ 
       ...pet, 
       happiness: Math.min(100, pet.happiness + 20),
-      exp: pet.exp + 15 
+      exp: pet.exp + 5 
     });
   };
 
@@ -175,17 +181,64 @@ export default function App() {
       {!pet ? (
         <div className="text-center space-y-6">
           <h2 className="text-2xl font-bold text-gray-800">领养你的第一个伙伴吧</h2>
-          <div className="grid grid-cols-2 gap-4 px-4">
+          <div className="grid grid-cols-2 gap-6 px-4">
             {(Object.keys(PET_TEMPLATES) as PetType[]).map(type => (
               <motion.button
                 key={type}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.05, y: -5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsNamingPet(type)}
-                className="p-6 rounded-3xl bg-white shadow-lg border-4 border-transparent hover:border-blue-400 transition-all flex flex-col items-center"
+                className="relative p-8 rounded-[40px] bg-white shadow-xl border-4 border-transparent hover:border-blue-400 transition-all flex flex-col items-center overflow-hidden group"
               >
-                <span className="text-6xl mb-2">{PET_TEMPLATES[type].stages[0]}</span>
-                <span className="font-bold text-gray-700">{PET_TEMPLATES[type].name}</span>
+                {/* Background Decoration */}
+                <div 
+                  className="absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500"
+                  style={{ backgroundColor: PET_TEMPLATES[type].color }}
+                />
+                
+                {/* Character Preview */}
+                <div className="relative mb-4">
+                  {/* Ears Preview */}
+                  <div className="absolute -top-3 inset-x-0 flex justify-between px-1">
+                    {type === 'rabbit' ? (
+                      <>
+                        <div className="w-4 h-10 bg-white rounded-full rotate-[-10deg] border-2 border-pink-100" />
+                        <div className="w-4 h-10 bg-white rounded-full rotate-[10deg] border-2 border-pink-100" />
+                      </>
+                    ) : type === 'cat' ? (
+                      <>
+                        <div className="w-6 h-6 bg-pink-100 rounded-tr-2xl rotate-[-15deg]" />
+                        <div className="w-6 h-6 bg-pink-100 rounded-tl-2xl rotate-[15deg]" />
+                      </>
+                    ) : type === 'dog' ? (
+                      <>
+                        <div className="w-6 h-10 bg-orange-100 rounded-b-full rotate-[-10deg]" />
+                        <div className="w-6 h-10 bg-orange-100 rounded-b-full rotate-[10deg]" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-6 h-6 bg-green-100 rounded-full rotate-[-15deg]" />
+                        <div className="w-6 h-6 bg-green-100 rounded-full rotate-[15deg]" />
+                      </>
+                    )}
+                  </div>
+                  <div 
+                    className="w-24 h-24 rounded-full flex items-center justify-center text-6xl shadow-inner relative z-10"
+                    style={{ backgroundColor: PET_TEMPLATES[type].color + '33' }}
+                  >
+                    {PET_TEMPLATES[type].stages[0]}
+                    {/* Tiny Blush in Preview */}
+                    <div className="absolute inset-x-0 bottom-6 flex justify-between px-4 opacity-40">
+                      <div className="w-3 h-1.5 bg-pink-300 rounded-full blur-[1px]" />
+                      <div className="w-3 h-1.5 bg-pink-300 rounded-full blur-[1px]" />
+                    </div>
+                  </div>
+                </div>
+                
+                <span className="font-black text-gray-700 text-lg">{PET_TEMPLATES[type].name}</span>
+                <div className="mt-2 px-3 py-1 bg-gray-50 rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  点击领养
+                </div>
               </motion.button>
             ))}
           </div>
@@ -261,9 +314,12 @@ export default function App() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={playWithPet}
-                className="bg-pink-400 text-white p-4 rounded-full shadow-lg hover:bg-pink-500 transition-colors"
+                className="bg-pink-400 text-white p-4 rounded-full shadow-lg hover:bg-pink-500 transition-colors relative"
               >
                 <Heart className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 bg-white text-pink-500 text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-sm border border-pink-100">
+                  -5
+                </div>
               </motion.button>
               <span className="text-xs font-bold text-pink-500">陪它玩</span>
             </div>
@@ -335,47 +391,67 @@ export default function App() {
     </div>
   );
 
-  const renderTasks = () => (
-    <div className="space-y-4 py-6">
-      <h2 className="text-2xl font-bold text-gray-800 px-4">今日任务</h2>
-      <div className="space-y-3 px-4">
-        {INITIAL_TASKS.map(task => (
-          <motion.div
-            key={task.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white p-4 rounded-2xl shadow-md flex items-center justify-between border-2 border-transparent hover:border-green-200 transition-all"
-          >
-            <div className="flex items-center space-x-4">
-              <span className="text-4xl">{task.icon}</span>
-              <div>
-                <h3 className="font-bold text-gray-800">{task.title}</h3>
-                <p className="text-sm text-gray-500">{task.description}</p>
+  const renderTasks = () => {
+    const categories = [
+      { id: 'life', name: '生活类', icon: '🏠' },
+      { id: 'habit', name: '习惯类', icon: '✨' },
+      { id: 'learning', name: '学习 & 专注力类', icon: '📚' },
+      { id: 'emotion', name: '礼貌与情绪类', icon: '🌈' },
+    ];
+
+    return (
+      <div className="space-y-8 py-6 px-4">
+        <h2 className="text-2xl font-bold text-gray-800">今日任务</h2>
+        {categories.map(cat => {
+          const catTasks = INITIAL_TASKS.filter(t => t.category === cat.id);
+          return (
+            <div key={cat.id} className="space-y-4">
+              <div className="flex items-center space-x-2 border-b border-gray-100 pb-2">
+                <span className="text-xl">{cat.icon}</span>
+                <h3 className="text-lg font-bold text-gray-700">{cat.name}</h3>
+              </div>
+              <div className="space-y-3">
+                {catTasks.map(task => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-white p-4 rounded-2xl shadow-md flex items-center justify-between border-2 border-transparent hover:border-green-200 transition-all"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <span className="text-4xl">{task.icon}</span>
+                      <div>
+                        <h4 className="font-bold text-gray-800">{task.title}</h4>
+                        <p className="text-sm text-gray-500">{task.description}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => completeTask(task)}
+                      disabled={completedTaskIds.includes(task.id)}
+                      className={`px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center space-x-1 ${
+                        completedTaskIds.includes(task.id)
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                    >
+                      {completedTaskIds.includes(task.id) ? (
+                        <span>已完成</span>
+                      ) : (
+                        <>
+                          <span>+{task.points}</span>
+                          <Star className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </motion.div>
+                ))}
               </div>
             </div>
-            <button
-              onClick={() => completeTask(task)}
-              disabled={completedTaskIds.includes(task.id)}
-              className={`px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center space-x-1 ${
-                completedTaskIds.includes(task.id)
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-green-500 text-white hover:bg-green-600'
-              }`}
-            >
-              {completedTaskIds.includes(task.id) ? (
-                <span>已完成</span>
-              ) : (
-                <>
-                  <span>+{task.points}</span>
-                  <Star className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </motion.div>
-        ))}
+          );
+        })}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderShop = () => (
     <div className="space-y-4 py-6">

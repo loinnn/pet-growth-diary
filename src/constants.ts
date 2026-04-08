@@ -1,23 +1,47 @@
 import { PetType, Task, Item } from './types';
 
 export const PET_TEMPLATES: Record<PetType, { name: string; color: string; stages: string[] }> = {
-  cat: { name: '小猫咪', color: '#FFB7B2', stages: ['🐱', '🐈', '🦁'] },
-  dog: { name: '小狗狗', color: '#FFDAC1', stages: ['🐶', '🐕', '🐩'] },
-  rabbit: { name: '小兔子', color: '#E2F0CB', stages: ['🐰', '🐇', '🦄'] },
-  dragon: { name: '小火龙', color: '#B5EAD7', stages: ['🐲', '🐉', '🦖'] },
+  cat: { name: '奶糖猫', color: '#FFB7B2', stages: ['😺', '🐈', '🦁'] },
+  dog: { name: '芝士犬', color: '#FFDAC1', stages: ['🐶', '🐕', '🐩'] },
+  rabbit: { name: '草莓兔', color: '#FF9AA2', stages: ['🐰', '🐇', '🦄'] },
+  dragon: { name: '薄荷龙', color: '#B5EAD7', stages: ['🐲', '🐉', '🦖'] },
 };
 
 export const INITIAL_TASKS: Task[] = [
-  { id: 't1', title: '阅读30分钟', description: '静下心来读一本好书', points: 50, icon: '📖', category: 'study' },
-  { id: 't2', title: '整理玩具', description: '把玩好的玩具放回原位', points: 30, icon: '🧸', category: 'chore' },
-  { id: 't3', title: '自己刷牙', description: '早晚都要认真刷牙哦', points: 20, icon: '🪥', category: 'habit' },
-  { id: 't4', title: '帮妈妈扫地', description: '做一个勤劳的小帮手', points: 40, icon: '🧹', category: 'chore' },
-  { id: 't5', title: '背诵一首古诗', description: '感受中华文化的魅力', points: 60, icon: '📜', category: 'study' },
-  { id: 't6', title: '自己穿衣服', description: '我是独立的小宝贝', points: 20, icon: '👕', category: 'habit' },
-  { id: 't7', title: '练习钢琴/乐器', description: '美妙的音乐从这里开始', points: 70, icon: '🎹', category: 'study' },
-  { id: 't8', title: '吃完碗里的饭', description: '不浪费粮食是好习惯', points: 30, icon: '🍚', category: 'habit' },
-  { id: 't9', title: '给花浇水', description: '照顾小植物慢慢长大', points: 25, icon: '💧', category: 'chore' },
-  { id: 't10', title: '早睡早起', description: '晚上9点前上床睡觉', points: 50, icon: '🌙', category: 'habit' },
+  // 一、生活类
+  { id: 'l1', title: '按时起床', description: '按时起床，不赖床', points: 5, icon: '⏰', category: 'life' },
+  { id: 'l2', title: '自己穿衣穿鞋', description: '自己穿衣服、穿袜子、穿鞋', points: 5, icon: '👟', category: 'life' },
+  { id: 'l3', title: '自己刷牙', description: '自己刷牙（早晚各一次）', points: 5, icon: '🪥', category: 'life' },
+  { id: 'l4', title: '自己洗脸', description: '自己洗脸、擦香香', points: 5, icon: '🧼', category: 'life' },
+  { id: 'l5', title: '主动上厕所', description: '主动上厕所，不憋尿', points: 5, icon: '🚽', category: 'life' },
+  { id: 'l6', title: '整理睡具', description: '自己整理睡衣 / 小被子', points: 5, icon: '🛌', category: 'life' },
+  { id: 'l7', title: '按时上床', description: '按时上床，不拖延', points: 5, icon: '🌙', category: 'life' },
+  { id: 'l8', title: '安静入睡', description: '安静入睡，不吵闹', points: 5, icon: '💤', category: 'life' },
+
+  // 二、习惯类
+  { id: 'h1', title: '按时吃饭', description: '按时坐好吃饭，不拖拉', points: 5, icon: '🍽️', category: 'habit' },
+  { id: 'h2', title: '自己吃饭', description: '自己用勺子 / 筷子吃饭，不喂饭', points: 5, icon: '🥄', category: 'habit' },
+  { id: 'h3', title: '不挑食', description: '不挑食，不边玩边吃', points: 5, icon: '🥗', category: 'habit' },
+  { id: 'h4', title: '吃饭不撒饭', description: '吃饭不撒太多饭菜', points: 5, icon: '🍚', category: 'habit' },
+  { id: 'h5', title: '饭后送碗', description: '吃完自己把碗送到厨房', points: 5, icon: '🥣', category: 'habit' },
+  { id: 'h6', title: '饭前洗手', description: '饭前洗手、饭后擦嘴', points: 5, icon: '🧼', category: 'habit' },
+  { id: 'h7', title: '玩具归位', description: '玩具玩完自己收拾归位', points: 5, icon: '🧸', category: 'habit' },
+  { id: 'h8', title: '书放回书架', description: '看完书把书放回书架', points: 5, icon: '📚', category: 'habit' },
+  { id: 'h9', title: '挂好衣服', description: '自己脱外套、挂好衣服', points: 5, icon: '🧥', category: 'habit' },
+  { id: 'h10', title: '不乱扔垃圾', description: '不乱扔垃圾，知道丢垃圾桶', points: 5, icon: '🗑️', category: 'habit' },
+  { id: 'h11', title: '整理小口袋', description: '自己整理小书包 / 小口袋', points: 5, icon: '🎒', category: 'habit' },
+  { id: 'h12', title: '换鞋', description: '外出回家主动换鞋', points: 5, icon: '👞', category: 'habit' },
+
+  // 三、学习 & 专注力类
+  { id: 's1', title: '安静看书', description: '安静看书 10 分钟', points: 5, icon: '📖', category: 'learning' },
+  { id: 's2', title: '完成手工', description: '完成简单小手工 / 涂色', points: 5, icon: '🎨', category: 'learning' },
+  { id: 's3', title: '认识字数', description: '认识 1～3 个汉字 / 数字', points: 5, icon: '🔢', category: 'learning' },
+  { id: 's4', title: '练习舞蹈', description: '跟着音乐练习舞蹈动作', points: 5, icon: '💃', category: 'learning' },
+
+  // 四、礼貌与情绪类
+  { id: 'e1', title: '说对不起', description: '犯错愿意说 “对不起”', points: 5, icon: '🙏', category: 'emotion' },
+  { id: 'e2', title: '不哭闹', description: '不哭闹、不乱发脾气', points: 5, icon: '😊', category: 'emotion' },
+  { id: 'e3', title: '少看电视', description: '不一直看手机 / 电视', points: 5, icon: '📺', category: 'emotion' },
 ];
 
 export const SHOP_ITEMS: Item[] = [
