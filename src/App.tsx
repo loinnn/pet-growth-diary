@@ -1,60 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2 } from 'lucide-react';
+import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Pet, Task, Item, UserStats, PetType } from './types';
+import { Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
 import { PetAvatar } from './components/PetAvatar';
 
-const STORAGE_KEY = 'pet_growth_diary_data';
-
 export default function App() {
   // --- State ---
-  const [points, setPoints] = useState(0);
-  const [pet, setPet] = useState<Pet | null>(null);
-  const [inventory, setInventory] = useState<string[]>([]);
-  const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
-  const [lastResetDate, setLastResetDate] = useState<string>('');
+  const [points, setPoints] = useState<number>(() => {
+    const saved = localStorage.getItem('pet_points');
+    return saved ? parseInt(saved) : 0;
+  });
+  
+  const [pet, setPet] = useState<Pet | null>(() => {
+    const saved = localStorage.getItem('pet_data');
+    return saved ? JSON.parse(saved) : null;
+  });
+  
+  const [inventory, setInventory] = useState<string[]>(() => {
+    const saved = localStorage.getItem('pet_inventory');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [completedTaskIds, setCompletedTaskIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('pet_tasks');
+    const today = new Date().toLocaleDateString();
+    const lastReset = localStorage.getItem('pet_last_reset');
+    
+    if (lastReset !== today) {
+      return [];
+    }
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [activeTab, setActiveTab] = useState<'home' | 'tasks' | 'shop' | 'closet'>('home');
   const [isActionAnimating, setIsActionAnimating] = useState<{ eating: boolean; playing: boolean }>({
     eating: false,
     playing: false,
   });
+  const [isNamingPet, setIsNamingPet] = useState<PetType | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempPetName, setTempPetName] = useState('');
 
-  // --- Initialization ---
+  // --- Persistence ---
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (saved) {
-      const data = JSON.parse(saved);
-      setPoints(data.points || 0);
-      setPet(data.pet || null);
-      setInventory(data.inventory || []);
-      
-      // Daily Reset Logic
-      if (data.lastResetDate !== today) {
-        setCompletedTaskIds([]);
-        setLastResetDate(today);
-      } else {
-        setCompletedTaskIds(data.completedTaskIds || []);
-        setLastResetDate(data.lastResetDate || today);
-      }
-    } else {
-      setLastResetDate(today);
-    }
-  }, []);
+    localStorage.setItem('pet_points', points.toString());
+  }, [points]);
 
   useEffect(() => {
-    const data = { points, pet, inventory, completedTaskIds, lastResetDate };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [points, pet, inventory, completedTaskIds, lastResetDate]);
+    localStorage.setItem('pet_data', JSON.stringify(pet));
+  }, [pet]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_inventory', JSON.stringify(inventory));
+  }, [inventory]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_tasks', JSON.stringify(completedTaskIds));
+    localStorage.setItem('pet_last_reset', new Date().toLocaleDateString());
+  }, [completedTaskIds]);
 
   // --- Actions ---
-  const adoptPet = (type: PetType) => {
+  const adoptPet = (type: PetType, name: string) => {
     const newPet: Pet = {
       id: Date.now().toString(),
-      name: PET_TEMPLATES[type].name,
+      name: name || PET_TEMPLATES[type].name,
       type,
       level: 1,
       exp: 0,
@@ -65,12 +76,23 @@ export default function App() {
       outfit: [],
       isAdopted: true,
     };
+    
     setPet(newPet);
+    setIsNamingPet(null);
+    setTempPetName('');
+    
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
     });
+  };
+
+  const renamePet = () => {
+    if (!pet || !tempPetName.trim()) return;
+    setPet({ ...pet, name: tempPetName });
+    setIsEditingName(false);
+    setTempPetName('');
   };
 
   const completeTask = (task: Task) => {
@@ -96,37 +118,30 @@ export default function App() {
   };
 
   const useItem = (itemId: string) => {
+    if (!pet) return;
     const item = SHOP_ITEMS.find(i => i.id === itemId);
-    if (!item || !pet) return;
+    if (!item) return;
 
     if (item.type === 'food') {
       setIsActionAnimating(prev => ({ ...prev, eating: true }));
       setTimeout(() => setIsActionAnimating(prev => ({ ...prev, eating: false })), 2000);
       
-      setPet(prev => {
-        if (!prev) return null;
-        const newHunger = Math.min(100, prev.hunger + (item.effect?.hunger || 0));
-        const newHappiness = Math.min(100, prev.happiness + (item.effect?.happiness || 0));
-        return { ...prev, hunger: newHunger, happiness: newHappiness, exp: prev.exp + 10 };
-      });
+      const newHunger = Math.min(100, pet.hunger + (item.effect?.hunger || 0));
+      const newHappiness = Math.min(100, pet.happiness + (item.effect?.happiness || 0));
       
-      // Remove one food from inventory
       const index = inventory.indexOf(itemId);
-      if (index > -1) {
-        const newInv = [...inventory];
-        newInv.splice(index, 1);
-        setInventory(newInv);
-      }
+      const newInv = [...inventory];
+      if (index > -1) newInv.splice(index, 1);
+
+      setPet({ ...pet, hunger: newHunger, happiness: newHappiness, exp: pet.exp + 10 });
+      setInventory(newInv);
     } else {
-      // Toggle clothing
-      setPet(prev => {
-        if (!prev) return null;
-        const isEquipped = prev.outfit.includes(itemId);
-        const newOutfit = isEquipped 
-          ? prev.outfit.filter(id => id !== itemId)
-          : [...prev.outfit, itemId];
-        return { ...prev, outfit: newOutfit };
-      });
+      const isEquipped = pet.outfit.includes(itemId);
+      const newOutfit = isEquipped 
+        ? pet.outfit.filter(id => id !== itemId)
+        : [...pet.outfit, itemId];
+      
+      setPet({ ...pet, outfit: newOutfit });
     }
   };
 
@@ -135,23 +150,17 @@ export default function App() {
     setIsActionAnimating(prev => ({ ...prev, playing: true }));
     setTimeout(() => setIsActionAnimating(prev => ({ ...prev, playing: false })), 2000);
     
-    setPet(prev => {
-      if (!prev) return null;
-      return { 
-        ...prev, 
-        happiness: Math.min(100, prev.happiness + 20),
-        exp: prev.exp + 15 
-      };
+    setPet({ 
+      ...pet, 
+      happiness: Math.min(100, pet.happiness + 20),
+      exp: pet.exp + 15 
     });
   };
 
   // Level up logic
   useEffect(() => {
     if (pet && pet.exp >= pet.level * 100) {
-      setPet(prev => {
-        if (!prev) return null;
-        return { ...prev, level: prev.level + 1, exp: 0 };
-      });
+      setPet({ ...pet, level: pet.level + 1, exp: 0 });
       confetti({
         particleCount: 150,
         spread: 100,
@@ -165,14 +174,14 @@ export default function App() {
     <div className="flex flex-col items-center justify-center space-y-8 py-10">
       {!pet ? (
         <div className="text-center space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">欢迎！领养你的第一个伙伴吧</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="text-2xl font-bold text-gray-800">领养你的第一个伙伴吧</h2>
+          <div className="grid grid-cols-2 gap-4 px-4">
             {(Object.keys(PET_TEMPLATES) as PetType[]).map(type => (
               <motion.button
                 key={type}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => adoptPet(type)}
+                onClick={() => setIsNamingPet(type)}
                 className="p-6 rounded-3xl bg-white shadow-lg border-4 border-transparent hover:border-blue-400 transition-all flex flex-col items-center"
               >
                 <span className="text-6xl mb-2">{PET_TEMPLATES[type].stages[0]}</span>
@@ -184,6 +193,21 @@ export default function App() {
       ) : (
         <>
           <div className="w-full max-w-md bg-white/50 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/20">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-xl font-black text-gray-800">{pet.name}</h3>
+                <button 
+                  onClick={() => {
+                    setTempPetName(pet.name);
+                    setIsEditingName(true);
+                  }}
+                  className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Lv.{pet.level}</span>
+            </div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <Utensils className="w-5 h-5 text-orange-400" />
@@ -257,6 +281,57 @@ export default function App() {
           </div>
         </>
       )}
+
+      {/* Naming Modal */}
+      <AnimatePresence>
+        {(isNamingPet || isEditingName) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+            >
+              {isNamingPet && <span className="text-7xl mb-4 block">{PET_TEMPLATES[isNamingPet].stages[0]}</span>}
+              <h3 className="text-2xl font-black text-gray-800 mb-2">
+                {isEditingName ? '修改宠物名字' : '给它起个名字吧'}
+              </h3>
+              <p className="text-gray-500 mb-6">一个好听的名字是友谊的开始</p>
+              <input
+                type="text"
+                value={tempPetName}
+                onChange={(e) => setTempPetName(e.target.value)}
+                placeholder="输入宠物名字..."
+                className="w-full bg-gray-100 border-2 border-transparent focus:border-blue-400 focus:bg-white outline-none rounded-2xl px-6 py-4 text-lg font-bold text-center transition-all mb-6"
+                autoFocus
+              />
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setIsNamingPet(null);
+                    setIsEditingName(false);
+                    setTempPetName('');
+                  }}
+                  className="flex-1 py-4 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => isEditingName ? renamePet() : adoptPet(isNamingPet!, tempPetName)}
+                  disabled={!tempPetName.trim()}
+                  className="flex-1 bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none transition-all"
+                >
+                  {isEditingName ? '保存修改' : '确定领养'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 
@@ -377,9 +452,11 @@ export default function App() {
           <span className="bg-blue-500 text-white p-1 rounded-lg">🐾</span>
           <span>萌宠成长记</span>
         </h1>
-        <div className="bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full font-bold flex items-center space-x-2 shadow-sm">
-          <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-          <span>{points}</span>
+        <div className="flex items-center space-x-3">
+          <div className="bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full font-bold flex items-center space-x-2 shadow-sm">
+            <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
+            <span>{points}</span>
+          </div>
         </div>
       </header>
 
