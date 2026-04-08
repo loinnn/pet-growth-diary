@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2 } from 'lucide-react';
+import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
@@ -34,6 +34,16 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('pet_all_tasks');
+    return saved ? JSON.parse(saved) : INITIAL_TASKS;
+  });
+
+  const [shopItems, setShopItems] = useState<Item[]>(() => {
+    const saved = localStorage.getItem('pet_shop_items');
+    return saved ? JSON.parse(saved) : SHOP_ITEMS;
+  });
+
   const [activeTab, setActiveTab] = useState<'home' | 'tasks' | 'shop' | 'closet'>('home');
   const [isActionAnimating, setIsActionAnimating] = useState<{ eating: boolean; playing: boolean }>({
     eating: false,
@@ -41,7 +51,24 @@ export default function App() {
   });
   const [isNamingPet, setIsNamingPet] = useState<PetType | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isResetConfirming, setIsResetConfirming] = useState(false);
+  const [isManagingTasks, setIsManagingTasks] = useState(false);
+  const [isManagingShop, setIsManagingShop] = useState(false);
   const [tempPetName, setTempPetName] = useState('');
+  const [newTask, setNewTask] = useState<Partial<Task>>({
+    title: '',
+    description: '',
+    points: 5,
+    category: 'life',
+    icon: '📝'
+  });
+  const [newItem, setNewItem] = useState<Partial<Item>>({
+    name: '',
+    price: 50,
+    type: 'food',
+    image: '🎁',
+    effect: { hunger: 0, happiness: 0 }
+  });
 
   // --- Persistence ---
   useEffect(() => {
@@ -60,6 +87,62 @@ export default function App() {
     localStorage.setItem('pet_tasks', JSON.stringify(completedTaskIds));
     localStorage.setItem('pet_last_reset', new Date().toLocaleDateString());
   }, [completedTaskIds]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_all_tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_shop_items', JSON.stringify(shopItems));
+  }, [shopItems]);
+
+  const resetGame = () => {
+    localStorage.clear();
+    setPet(null);
+    setPoints(0);
+    setInventory([]);
+    setCompletedTaskIds([]);
+    setTasks(INITIAL_TASKS);
+    setShopItems(SHOP_ITEMS);
+    setIsResetConfirming(false);
+    setActiveTab('home');
+  };
+
+  const addTask = () => {
+    if (!newTask.title) return;
+    const task: Task = {
+      id: 'custom-' + Date.now(),
+      title: newTask.title,
+      description: newTask.description || '',
+      points: newTask.points || 5,
+      category: newTask.category as any || 'life',
+      icon: newTask.icon || '📝'
+    };
+    setTasks(prev => [...prev, task]);
+    setNewTask({ title: '', description: '', points: 5, category: 'life', icon: '📝' });
+  };
+
+  const deleteTask = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  const addShopItem = () => {
+    if (!newItem.name) return;
+    const item: Item = {
+      id: 'custom-item-' + Date.now(),
+      name: newItem.name,
+      price: newItem.price || 50,
+      type: newItem.type as any || 'food',
+      image: newItem.image || '🎁',
+      effect: newItem.effect || { hunger: 0, happiness: 0 }
+    };
+    setShopItems(prev => [...prev, item]);
+    setNewItem({ name: '', price: 50, type: 'food', image: '🎁', effect: { hunger: 0, happiness: 0 } });
+  };
+
+  const deleteShopItem = (id: string) => {
+    setShopItems(prev => prev.filter(i => i.id !== id));
+  };
 
   // --- Actions ---
   const adoptPet = (type: PetType, name: string) => {
@@ -119,7 +202,7 @@ export default function App() {
 
   const useItem = (itemId: string) => {
     if (!pet) return;
-    const item = SHOP_ITEMS.find(i => i.id === itemId);
+    const item = shopItems.find(i => i.id === itemId);
     if (!item) return;
 
     if (item.type === 'food') {
@@ -258,6 +341,13 @@ export default function App() {
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
+                <button 
+                  onClick={() => setIsResetConfirming(true)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors ml-2"
+                  title="重置游戏"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                </button>
               </div>
               <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Lv.{pet.level}</span>
             </div>
@@ -338,56 +428,6 @@ export default function App() {
         </>
       )}
 
-      {/* Naming Modal */}
-      <AnimatePresence>
-        {(isNamingPet || isEditingName) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
-            >
-              {isNamingPet && <span className="text-7xl mb-4 block">{PET_TEMPLATES[isNamingPet].stages[0]}</span>}
-              <h3 className="text-2xl font-black text-gray-800 mb-2">
-                {isEditingName ? '修改宠物名字' : '给它起个名字吧'}
-              </h3>
-              <p className="text-gray-500 mb-6">一个好听的名字是友谊的开始</p>
-              <input
-                type="text"
-                value={tempPetName}
-                onChange={(e) => setTempPetName(e.target.value)}
-                placeholder="输入宠物名字..."
-                className="w-full bg-gray-100 border-2 border-transparent focus:border-blue-400 focus:bg-white outline-none rounded-2xl px-6 py-4 text-lg font-bold text-center transition-all mb-6"
-                autoFocus
-              />
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setIsNamingPet(null);
-                    setIsEditingName(false);
-                    setTempPetName('');
-                  }}
-                  className="flex-1 py-4 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={() => isEditingName ? renamePet() : adoptPet(isNamingPet!, tempPetName)}
-                  disabled={!tempPetName.trim()}
-                  className="flex-1 bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none transition-all"
-                >
-                  {isEditingName ? '保存修改' : '确定领养'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 
@@ -400,10 +440,20 @@ export default function App() {
     ];
 
     return (
-      <div className="space-y-8 py-6 px-4">
-        <h2 className="text-2xl font-bold text-gray-800">今日任务</h2>
+      <div className="space-y-8 py-6 px-4 pb-24">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">今日任务</h2>
+          <button 
+            onClick={() => setIsManagingTasks(true)}
+            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            <span>管理任务</span>
+          </button>
+        </div>
         {categories.map(cat => {
-          const catTasks = INITIAL_TASKS.filter(t => t.category === cat.id);
+          const catTasks = tasks.filter(t => t.category === cat.id);
+          if (catTasks.length === 0) return null;
           return (
             <div key={cat.id} className="space-y-4">
               <div className="flex items-center space-x-2 border-b border-gray-100 pb-2">
@@ -454,10 +504,19 @@ export default function App() {
   };
 
   const renderShop = () => (
-    <div className="space-y-4 py-6">
-      <h2 className="text-2xl font-bold text-gray-800 px-4">宠物商店</h2>
-      <div className="grid grid-cols-2 gap-4 px-4 pb-20">
-        {SHOP_ITEMS.map(item => (
+    <div className="space-y-4 py-6 px-4 pb-24">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800">宠物商店</h2>
+        <button 
+          onClick={() => setIsManagingShop(true)}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+          <span>管理商店</span>
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {shopItems.map(item => (
           <motion.div
             key={item.id}
             className="bg-white p-4 rounded-3xl shadow-md flex flex-col items-center space-y-2 border-2 border-orange-50"
@@ -488,7 +547,7 @@ export default function App() {
       ) : (
         <div className="grid grid-cols-3 gap-4 px-4">
           {Array.from(new Set(inventory)).map((itemId: string) => {
-            const item = SHOP_ITEMS.find(i => i.id === itemId);
+            const item = shopItems.find(i => i.id === itemId);
             if (!item) return null;
             const count = inventory.filter(id => id === itemId).length;
             const isEquipped = pet?.outfit.includes(itemId);
@@ -581,6 +640,308 @@ export default function App() {
           label="衣橱" 
         />
       </nav>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {isManagingShop && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-md rounded-[32px] p-6 shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-gray-800">管理商店物品</h3>
+                <button onClick={() => setIsManagingShop(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Add New Item Form */}
+              <div className="bg-orange-50 p-4 rounded-2xl mb-6 space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="物品名称"
+                    value={newItem.name}
+                    onChange={e => setNewItem({...newItem, name: e.target.value})}
+                    className="flex-1 bg-white border-none rounded-xl px-4 py-2 text-sm outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="图标"
+                    value={newItem.image}
+                    onChange={e => setNewItem({...newItem, image: e.target.value})}
+                    className="w-12 bg-white border-none rounded-xl px-2 py-2 text-center text-lg outline-none"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
+                    <span className="text-xs text-gray-400">价格:</span>
+                    <input
+                      type="number"
+                      value={newItem.price}
+                      onChange={e => setNewItem({...newItem, price: parseInt(e.target.value) || 0})}
+                      className="w-full bg-transparent border-none text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <select
+                    value={newItem.type}
+                    onChange={e => setNewItem({...newItem, type: e.target.value as any})}
+                    className="flex-1 bg-white border-none rounded-xl px-4 py-2 text-sm outline-none"
+                  >
+                    <option value="food">食物</option>
+                    <option value="clothes">衣服</option>
+                    <option value="accessory">饰品</option>
+                  </select>
+                </div>
+                <div className="flex space-x-2">
+                  <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
+                    <span className="text-[10px] text-gray-400">饱食度+:</span>
+                    <input
+                      type="number"
+                      value={newItem.effect?.hunger}
+                      onChange={e => setNewItem({...newItem, effect: { ...newItem.effect!, hunger: parseInt(e.target.value) || 0 }})}
+                      className="w-full bg-transparent border-none text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
+                    <span className="text-[10px] text-gray-400">心情+:</span>
+                    <input
+                      type="number"
+                      value={newItem.effect?.happiness}
+                      onChange={e => setNewItem({...newItem, effect: { ...newItem.effect!, happiness: parseInt(e.target.value) || 0 }})}
+                      className="w-full bg-transparent border-none text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={addShopItem}
+                    disabled={!newItem.name}
+                    className="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-orange-600 disabled:opacity-50 flex items-center space-x-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>添加</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing Items List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {shopItems.map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{item.image}</span>
+                      <div>
+                        <div className="text-sm font-bold text-gray-700">{item.name}</div>
+                        <div className="text-[10px] text-gray-400">{item.price} 积分 | {item.type === 'food' ? '食物' : '装扮'}</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => deleteShopItem(item.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isManagingTasks && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-md rounded-[32px] p-6 shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-gray-800">管理任务列表</h3>
+                <button onClick={() => setIsManagingTasks(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Add New Task Form */}
+              <div className="bg-blue-50 p-4 rounded-2xl mb-6 space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="任务名称 (如: 练习钢琴)"
+                    value={newTask.title}
+                    onChange={e => setNewTask({...newTask, title: e.target.value})}
+                    className="flex-1 bg-white border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="图标"
+                    value={newTask.icon}
+                    onChange={e => setNewTask({...newTask, icon: e.target.value})}
+                    className="w-12 bg-white border-none rounded-xl px-2 py-2 text-center text-lg outline-none"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="任务描述 (可选)"
+                  value={newTask.description}
+                  onChange={e => setNewTask({...newTask, description: e.target.value})}
+                  className="w-full bg-white border-none rounded-xl px-4 py-2 text-sm outline-none"
+                />
+                <div className="flex space-x-2">
+                  <select
+                    value={newTask.category}
+                    onChange={e => setNewTask({...newTask, category: e.target.value as any})}
+                    className="flex-1 bg-white border-none rounded-xl px-4 py-2 text-sm outline-none"
+                  >
+                    <option value="life">生活类</option>
+                    <option value="habit">习惯类</option>
+                    <option value="learning">学习类</option>
+                    <option value="emotion">情绪类</option>
+                  </select>
+                  <div className="flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
+                    <Star className="w-3 h-3 text-yellow-500" />
+                    <input
+                      type="number"
+                      value={newTask.points}
+                      onChange={e => setNewTask({...newTask, points: parseInt(e.target.value) || 0})}
+                      className="w-8 bg-transparent border-none text-sm font-bold outline-none text-center"
+                    />
+                  </div>
+                  <button
+                    onClick={addTask}
+                    disabled={!newTask.title}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-600 disabled:opacity-50 flex items-center space-x-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>添加</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing Tasks List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {tasks.map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{task.icon}</span>
+                      <div>
+                        <div className="text-sm font-bold text-gray-700">{task.title}</div>
+                        <div className="text-[10px] text-gray-400">{task.description}</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => deleteTask(task.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isResetConfirming && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+            >
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <RefreshCcw className="w-10 h-10 text-red-500" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-800 mb-2">重置游戏？</h3>
+              <p className="text-gray-500 mb-8">这会删除当前的宠物、积分和所有物品，无法恢复哦！</p>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setIsResetConfirming(false)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={resetGame}
+                  className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                >
+                  确定重置
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {(isNamingPet || isEditingName) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+            >
+              {isNamingPet && <span className="text-7xl mb-4 block">{PET_TEMPLATES[isNamingPet].stages[0]}</span>}
+              <h3 className="text-2xl font-black text-gray-800 mb-2">
+                {isEditingName ? '修改宠物名字' : '给它起个名字吧'}
+              </h3>
+              <p className="text-gray-500 mb-6">一个好听的名字是友谊的开始</p>
+              <input
+                type="text"
+                value={tempPetName}
+                onChange={(e) => setTempPetName(e.target.value)}
+                placeholder="输入宠物名字..."
+                className="w-full bg-gray-100 border-2 border-transparent focus:border-blue-400 focus:bg-white outline-none rounded-2xl px-6 py-4 text-lg font-bold text-center transition-all mb-6"
+                autoFocus
+              />
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setIsNamingPet(null);
+                    setIsEditingName(false);
+                    setTempPetName('');
+                  }}
+                  className="flex-1 py-4 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => isEditingName ? renamePet() : adoptPet(isNamingPet!, tempPetName)}
+                  disabled={!tempPetName.trim()}
+                  className="flex-1 bg-blue-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none transition-all"
+                >
+                  {isEditingName ? '保存修改' : '确定领养'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
