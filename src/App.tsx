@@ -429,8 +429,8 @@ export default function App() {
                 <Utensils className="w-5 h-5 text-orange-400" />
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-orange-400 leading-none">饱食度</span>
-                  <span className="text-[8px] font-black text-orange-300 leading-none mt-0.5">
-                    {pet.hunger === 100 ? <span className="text-orange-500">MAX!</span> : `${pet.hunger}/100`}
+                  <span className="text-[10px] font-black text-orange-500 leading-none mt-1">
+                    {pet.hunger === 100 ? "MAX!" : `${pet.hunger}/100`}
                   </span>
                 </div>
                 <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden relative">
@@ -445,8 +445,8 @@ export default function App() {
                 <Heart className="w-5 h-5 text-red-400" />
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-red-400 leading-none">心情值</span>
-                  <span className="text-[8px] font-black text-red-300 leading-none mt-0.5">
-                    {pet.happiness === 100 ? <span className="text-red-500">MAX!</span> : `${pet.happiness}/100`}
+                  <span className="text-[10px] font-black text-red-500 leading-none mt-1">
+                    {pet.happiness === 100 ? "MAX!" : `${pet.happiness}/100`}
                   </span>
                 </div>
                 <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden relative">
@@ -469,7 +469,7 @@ export default function App() {
               </div>
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-gray-500 leading-none">经验值</span>
-                <span className="text-[9px] font-black text-gray-400 leading-none mt-0.5">{pet.exp}/{pet.level * 100}</span>
+                <span className="text-[10px] font-black text-gray-600 leading-none mt-1">{pet.exp}/{pet.level * 100}</span>
               </div>
             </div>
           </div>
