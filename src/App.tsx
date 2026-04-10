@@ -44,6 +44,17 @@ export default function App() {
     return saved ? JSON.parse(saved) : SHOP_ITEMS;
   });
 
+  const [dailyActions, setDailyActions] = useState<{ fed: boolean; played: boolean }>(() => {
+    const saved = localStorage.getItem('pet_daily_actions');
+    const today = new Date().toLocaleDateString();
+    const lastActive = localStorage.getItem('pet_last_active_date');
+    
+    if (lastActive !== today) {
+      return { fed: false, played: false };
+    }
+    return saved ? JSON.parse(saved) : { fed: false, played: false };
+  });
+
   const [activeTab, setActiveTab] = useState<'home' | 'tasks' | 'shop' | 'closet'>('home');
   const [isActionAnimating, setIsActionAnimating] = useState<{ eating: boolean; playing: boolean }>({
     eating: false,
@@ -95,6 +106,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pet_shop_items', JSON.stringify(shopItems));
   }, [shopItems]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_daily_actions', JSON.stringify(dailyActions));
+  }, [dailyActions]);
 
   const resetGame = () => {
     localStorage.clear();
@@ -154,8 +169,6 @@ export default function App() {
       exp: 0,
       hunger: 50,
       happiness: 50,
-      lastFed: Date.now(),
-      lastPlayed: Date.now(),
       outfit: [],
       isAdopted: true,
     };
@@ -210,14 +223,14 @@ export default function App() {
       setTimeout(() => setIsActionAnimating(prev => ({ ...prev, eating: false })), 2000);
       
       const newHunger = Math.min(100, pet.hunger + (item.effect?.hunger || 0));
-      const newHappiness = Math.min(100, pet.happiness + (item.effect?.happiness || 0));
       
       const index = inventory.indexOf(itemId);
       const newInv = [...inventory];
       if (index > -1) newInv.splice(index, 1);
 
-      setPet({ ...pet, hunger: newHunger, happiness: newHappiness, exp: pet.exp + 10 });
+      setPet({ ...pet, hunger: newHunger, exp: pet.exp + 5 });
       setInventory(newInv);
+      setDailyActions(prev => ({ ...prev, fed: true }));
     } else {
       const isEquipped = pet.outfit.includes(itemId);
       const newOutfit = isEquipped 
@@ -241,9 +254,10 @@ export default function App() {
     
     setPet({ 
       ...pet, 
-      happiness: Math.min(100, pet.happiness + 20),
-      exp: pet.exp + 5 
+      happiness: Math.min(100, pet.happiness + 10),
+      exp: pet.exp + 5
     });
+    setDailyActions(prev => ({ ...prev, played: true }));
   };
 
   // Level up logic
@@ -257,6 +271,55 @@ export default function App() {
       });
     }
   }, [pet?.exp]);
+
+  // Daily decay & reset logic
+  useEffect(() => {
+    if (!pet) return;
+
+    const today = new Date().toLocaleDateString();
+    const lastActive = localStorage.getItem('pet_last_active_date');
+    
+    if (lastActive && lastActive !== today) {
+      const savedActions = localStorage.getItem('pet_daily_actions');
+      const actions = savedActions ? JSON.parse(savedActions) : { fed: false, played: false };
+      
+      // Calculate missed days
+      const lastDate = new Date(lastActive);
+      const todayDate = new Date(today);
+      const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 0) {
+        setPet(prev => {
+          if (!prev) return null;
+          
+          let hungerDrop = 0;
+          let happinessDrop = 0;
+
+          // Penalty for the last active day
+          if (!actions.fed) hungerDrop += 5;
+          if (!actions.played) happinessDrop += 5;
+
+          // Penalty for fully missed days in between
+          if (diffDays > 1) {
+            hungerDrop += (diffDays - 1) * 5;
+            happinessDrop += (diffDays - 1) * 5;
+          }
+
+          return {
+            ...prev,
+            hunger: Math.max(0, prev.hunger - hungerDrop),
+            happiness: Math.max(0, prev.happiness - happinessDrop)
+          };
+        });
+      }
+      
+      // Reset for new day
+      setDailyActions({ fed: false, played: false });
+    }
+    
+    localStorage.setItem('pet_last_active_date', today);
+  }, [pet?.id]);
 
   // --- Render Helpers ---
   const renderHome = () => (
@@ -349,13 +412,28 @@ export default function App() {
                   <RefreshCcw className="w-4 h-4" />
                 </button>
               </div>
-              <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Lv.{pet.level}</span>
+              <div className="flex space-x-2">
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-[10px] font-bold ${dailyActions.fed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <Utensils className="w-3 h-3" />
+                  <span>{dailyActions.fed ? '已喂食' : '未喂食'}</span>
+                </div>
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-[10px] font-bold ${dailyActions.played ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <Heart className="w-3 h-3" />
+                  <span>{dailyActions.played ? '已玩耍' : '未玩耍'}</span>
+                </div>
+                <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Lv.{pet.level}</span>
+              </div>
             </div>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <Utensils className="w-5 h-5 text-orange-400" />
-                <span className="text-[10px] font-bold text-orange-400">饱食度</span>
-                <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-orange-400 leading-none">饱食度</span>
+                  <span className="text-[8px] font-black text-orange-300 leading-none mt-0.5">
+                    {pet.hunger === 100 ? <span className="text-orange-500">MAX!</span> : `${pet.hunger}/100`}
+                  </span>
+                </div>
+                <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden relative">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${pet.hunger}%` }}
@@ -365,8 +443,13 @@ export default function App() {
               </div>
               <div className="flex items-center space-x-2">
                 <Heart className="w-5 h-5 text-red-400" />
-                <span className="text-[10px] font-bold text-red-400">心情值</span>
-                <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-red-400 leading-none">心情值</span>
+                  <span className="text-[8px] font-black text-red-300 leading-none mt-0.5">
+                    {pet.happiness === 100 ? <span className="text-red-500">MAX!</span> : `${pet.happiness}/100`}
+                  </span>
+                </div>
+                <div className="w-24 h-3 bg-gray-200 rounded-full overflow-hidden relative">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${pet.happiness}%` }}
@@ -377,14 +460,17 @@ export default function App() {
             </div>
             <div className="flex items-center space-x-2">
               <Star className="w-5 h-5 text-yellow-400" />
-              <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden relative">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${(pet.exp / (pet.level * 100)) * 100}%` }}
                   className="h-full bg-yellow-400"
                 />
               </div>
-              <span className="text-xs font-bold text-gray-500">经验值</span>
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-gray-500 leading-none">经验值</span>
+                <span className="text-[9px] font-black text-gray-400 leading-none mt-0.5">{pet.exp}/{pet.level * 100}</span>
+              </div>
             </div>
           </div>
 
@@ -682,7 +768,7 @@ export default function App() {
                 </div>
                 <div className="flex space-x-2">
                   <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
-                    <span className="text-xs text-gray-400">价格:</span>
+                    <span className="text-xs text-gray-400 shrink-0 whitespace-nowrap">价格:</span>
                     <input
                       type="number"
                       value={newItem.price}
@@ -702,7 +788,7 @@ export default function App() {
                 </div>
                 <div className="flex space-x-2">
                   <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
-                    <span className="text-[10px] text-gray-400">饱食度+:</span>
+                    <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">饱食度+:</span>
                     <input
                       type="number"
                       value={newItem.effect?.hunger}
@@ -711,7 +797,7 @@ export default function App() {
                     />
                   </div>
                   <div className="flex-1 flex items-center bg-white rounded-xl px-3 py-2 space-x-1">
-                    <span className="text-[10px] text-gray-400">心情+:</span>
+                    <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">心情+:</span>
                     <input
                       type="number"
                       value={newItem.effect?.happiness}

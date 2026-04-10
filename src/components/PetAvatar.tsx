@@ -65,7 +65,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           >
             <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-2xl shadow-md border border-white/50 flex items-center">
               <span className="text-lg">
-                {hunger < 40 ? '🍕' : isSad ? '😢' : '❤️'}
+                {hunger < 40 ? '🍕' : happiness === 100 ? '🌟' : isSad ? '😢' : '❤️'}
               </span>
             </div>
           </motion.div>

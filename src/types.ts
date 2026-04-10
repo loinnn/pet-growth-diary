@@ -8,8 +8,6 @@ export interface Pet {
   exp: number;
   hunger: number; // 0-100
   happiness: number; // 0-100
-  lastFed: number;
-  lastPlayed: number;
   outfit: string[]; // IDs of items
   isAdopted: boolean;
 }

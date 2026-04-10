@@ -45,16 +45,16 @@ export const INITIAL_TASKS: Task[] = [
 ];
 
 export const SHOP_ITEMS: Item[] = [
-  { id: 'i1', name: '美味罐头', price: 20, type: 'food', image: '🥫', effect: { hunger: 30 } },
-  { id: 'i2', name: '超级骨头', price: 15, type: 'food', image: '🦴', effect: { hunger: 20, happiness: 10 } },
-  { id: 'i3', name: '酷酷墨镜', price: 100, type: 'accessory', image: '🕶️', effect: { happiness: 50 } },
-  { id: 'i4', name: '小红帽', price: 150, type: 'clothes', image: '👒', effect: { happiness: 60 } },
-  { id: 'i5', name: '蝴蝶结', price: 80, type: 'accessory', image: '🎀', effect: { happiness: 40 } },
-  { id: 'i6', name: '魔法棒', price: 200, type: 'accessory', image: '🪄', effect: { happiness: 100 } },
-  { id: 'i7', name: '甜甜圈', price: 25, type: 'food', image: '🍩', effect: { hunger: 15, happiness: 20 } },
-  { id: 'i8', name: '新鲜牛奶', price: 10, type: 'food', image: '🥛', effect: { hunger: 10, happiness: 5 } },
-  { id: 'i9', name: '皇冠', price: 500, type: 'accessory', image: '👑', effect: { happiness: 200 } },
-  { id: 'i10', name: '披风', price: 300, type: 'clothes', image: '🧥', effect: { happiness: 120 } },
-  { id: 'i11', name: '小气球', price: 50, type: 'accessory', image: '🎈', effect: { happiness: 30 } },
-  { id: 'i12', name: '生日蛋糕', price: 100, type: 'food', image: '🎂', effect: { hunger: 50, happiness: 50 } },
+  { id: 'i1', name: '美味罐头', price: 20, type: 'food', image: '🥫', effect: { hunger: 10 } },
+  { id: 'i2', name: '超级骨头', price: 15, type: 'food', image: '🦴', effect: { hunger: 10 } },
+  { id: 'i3', name: '酷酷墨镜', price: 50, type: 'accessory', image: '🕶️' },
+  { id: 'i4', name: '小红帽', price: 50, type: 'clothes', image: '👒' },
+  { id: 'i5', name: '蝴蝶结', price: 80, type: 'accessory', image: '🎀' },
+  { id: 'i6', name: '魔法棒', price: 80, type: 'accessory', image: '🪄' },
+  { id: 'i7', name: '甜甜圈', price: 25, type: 'food', image: '🍩', effect: { hunger: 10 } },
+  { id: 'i8', name: '新鲜牛奶', price: 10, type: 'food', image: '🥛', effect: { hunger: 10 } },
+  { id: 'i9', name: '皇冠', price: 100, type: 'accessory', image: '👑' },
+  { id: 'i10', name: '披风', price: 200, type: 'clothes', image: '🧥' },
+  { id: 'i11', name: '小气球', price: 50, type: 'accessory', image: '🎈' },
+  { id: 'i12', name: '生日蛋糕', price: 100, type: 'food', image: '🎂', effect: { hunger: 10 } },
 ];
