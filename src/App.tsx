@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings } from 'lucide-react';
+import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings, History } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
@@ -25,7 +25,7 @@ export default function App() {
   
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('pet_tasks');
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split('T')[0];
     const lastReset = localStorage.getItem('pet_last_reset');
     
     if (lastReset !== today) {
@@ -41,12 +41,33 @@ export default function App() {
 
   const [shopItems, setShopItems] = useState<Item[]>(() => {
     const saved = localStorage.getItem('pet_shop_items');
-    return saved ? JSON.parse(saved) : SHOP_ITEMS;
+    if (!saved) return SHOP_ITEMS;
+    
+    try {
+      const savedItems: Item[] = JSON.parse(saved);
+      // Sync prices and effects with the latest constants while keeping custom items
+      return savedItems.map(item => {
+        const constantItem = SHOP_ITEMS.find(si => si.id === item.id);
+        if (constantItem) {
+          return { 
+            ...item, 
+            price: constantItem.price, 
+            effect: constantItem.effect,
+            type: constantItem.type,
+            name: constantItem.name,
+            image: constantItem.image
+          };
+        }
+        return item;
+      });
+    } catch (e) {
+      return SHOP_ITEMS;
+    }
   });
 
   const [dailyActions, setDailyActions] = useState<{ fed: boolean; played: boolean }>(() => {
     const saved = localStorage.getItem('pet_daily_actions');
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split('T')[0];
     const lastActive = localStorage.getItem('pet_last_active_date');
     
     if (lastActive !== today) {
@@ -54,6 +75,17 @@ export default function App() {
     }
     return saved ? JSON.parse(saved) : { fed: false, played: false };
   });
+
+  const [activityLog, setActivityLog] = useState<{date: string, time: string, type: 'feed' | 'play', detail: string}[]>(() => {
+    const saved = localStorage.getItem('pet_activity_log');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [showActivityLog, setShowActivityLog] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('pet_activity_log', JSON.stringify(activityLog));
+  }, [activityLog]);
 
   const [activeTab, setActiveTab] = useState<'home' | 'tasks' | 'shop' | 'closet'>('home');
   const [isActionAnimating, setIsActionAnimating] = useState<{ eating: boolean; playing: boolean }>({
@@ -231,6 +263,15 @@ export default function App() {
       setPet({ ...pet, hunger: newHunger, exp: pet.exp + 5 });
       setInventory(newInv);
       setDailyActions(prev => ({ ...prev, fed: true }));
+
+      // Record activity log
+      const newRecord = {
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'feed' as const,
+        detail: item.name
+      };
+      setActivityLog(prev => [newRecord, ...prev].slice(0, 100));
     } else {
       const isEquipped = pet.outfit.includes(itemId);
       const newOutfit = isEquipped 
@@ -258,6 +299,15 @@ export default function App() {
       exp: pet.exp + 5
     });
     setDailyActions(prev => ({ ...prev, played: true }));
+
+    // Record activity log
+    const newRecord = {
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'play' as const,
+      detail: '陪它玩耍'
+    };
+    setActivityLog(prev => [newRecord, ...prev].slice(0, 100));
   };
 
   // Level up logic
@@ -276,7 +326,7 @@ export default function App() {
   useEffect(() => {
     if (!pet) return;
 
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split('T')[0];
     const lastActive = localStorage.getItem('pet_last_active_date');
     
     if (lastActive && lastActive !== today) {
@@ -316,6 +366,7 @@ export default function App() {
       
       // Reset for new day
       setDailyActions({ fed: false, played: false });
+      localStorage.setItem('pet_last_reset', today);
     }
     
     localStorage.setItem('pet_last_active_date', today);
@@ -413,14 +464,14 @@ export default function App() {
                 </button>
               </div>
               <div className="flex space-x-2">
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-[10px] font-bold ${dailyActions.fed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                  <Utensils className="w-3 h-3" />
-                  <span>{dailyActions.fed ? '已喂食' : '未喂食'}</span>
-                </div>
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-[10px] font-bold ${dailyActions.played ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
-                  <Heart className="w-3 h-3" />
-                  <span>{dailyActions.played ? '已玩耍' : '未玩耍'}</span>
-                </div>
+                <button 
+                  onClick={() => setShowActivityLog(true)}
+                  className="flex items-center space-x-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors shadow-sm"
+                  title="查看成长记录"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>成长记录</span>
+                </button>
                 <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">Lv.{pet.level}</span>
               </div>
             </div>
@@ -490,25 +541,37 @@ export default function App() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={playWithPet}
-                className="bg-pink-400 text-white p-4 rounded-full shadow-lg hover:bg-pink-500 transition-colors relative"
+                className={`p-4 rounded-full shadow-lg transition-all relative ${
+                  dailyActions.played 
+                    ? 'bg-pink-400 text-white hover:bg-pink-500' 
+                    : 'bg-gray-200 text-gray-400 grayscale hover:grayscale-0 hover:bg-pink-100'
+                }`}
               >
                 <Heart className="w-8 h-8" />
                 <div className="absolute -top-2 -right-2 bg-white text-pink-500 text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-sm border border-pink-100">
                   -5
                 </div>
               </motion.button>
-              <span className="text-xs font-bold text-pink-500">陪它玩</span>
+              <span className={`text-xs font-bold ${dailyActions.played ? 'text-pink-500' : 'text-gray-400'}`}>
+                {dailyActions.played ? '已玩耍' : '陪它玩'}
+              </span>
             </div>
             <div className="flex flex-col items-center space-y-1">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setActiveTab('shop')}
-                className="bg-orange-400 text-white p-4 rounded-full shadow-lg hover:bg-orange-500 transition-colors"
+                className={`p-4 rounded-full shadow-lg transition-all ${
+                  dailyActions.fed 
+                    ? 'bg-orange-400 text-white hover:bg-orange-500' 
+                    : 'bg-gray-200 text-gray-400 grayscale hover:grayscale-0 hover:bg-orange-100'
+                }`}
               >
                 <Utensils className="w-8 h-8" />
               </motion.button>
-              <span className="text-xs font-bold text-orange-500">去喂食</span>
+              <span className={`text-xs font-bold ${dailyActions.fed ? 'text-orange-500' : 'text-gray-400'}`}>
+                {dailyActions.fed ? '已进食' : '去喂食'}
+              </span>
             </div>
           </div>
         </>
@@ -516,6 +579,95 @@ export default function App() {
 
     </div>
   );
+
+  const renderFeedingLog = () => {
+    // Group logs by date
+    const groupedLogs = activityLog.reduce((acc, log) => {
+      if (!acc[log.date]) acc[log.date] = [];
+      acc[log.date].push(log);
+      return acc;
+    }, {} as Record<string, typeof activityLog>);
+
+    const sortedDates = Object.keys(groupedLogs).sort((a, b) => b.localeCompare(a));
+
+    return (
+      <AnimatePresence>
+        {showActivityLog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowActivityLog(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50">
+                <div className="flex items-center space-x-2">
+                  <History className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-lg font-black text-gray-800">成长记录</h3>
+                </div>
+                <button 
+                  onClick={() => setShowActivityLog(false)}
+                  className="p-2 hover:bg-white/50 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {sortedDates.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400">
+                    <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>还没有成长记录哦</p>
+                  </div>
+                ) : (
+                  sortedDates.map(date => (
+                    <div key={date} className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-[1px] flex-1 bg-gray-100" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{date}</span>
+                        <div className="h-[1px] flex-1 bg-gray-100" />
+                      </div>
+                      <div className="space-y-2">
+                        {groupedLogs[date].map((log, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-xl ${
+                                log.type === 'feed' ? 'bg-orange-50' : 'bg-pink-50'
+                              }`}>
+                                {log.type === 'feed' 
+                                  ? (SHOP_ITEMS.find(i => i.name === log.detail)?.image || '🍱')
+                                  : '🎮'
+                                }
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-800">{log.detail}</p>
+                                <p className="text-[10px] text-gray-400">{log.type === 'feed' ? '喂食' : '玩耍'}</p>
+                              </div>
+                            </div>
+                            <span className={`text-xs font-black px-2 py-1 rounded-lg ${
+                              log.type === 'feed' ? 'text-orange-500 bg-orange-50' : 'text-pink-500 bg-pink-50'
+                            }`}>
+                              {log.time}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    );
+  };
 
   const renderTasks = () => {
     const categories = [
@@ -674,6 +826,13 @@ export default function App() {
           <span>萌宠成长记</span>
         </h1>
         <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => window.location.reload()}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+            title="刷新页面"
+          >
+            <RefreshCcw className="w-5 h-5" />
+          </button>
           <div className="bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full font-bold flex items-center space-x-2 shadow-sm">
             <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
             <span>{points}</span>
@@ -697,6 +856,7 @@ export default function App() {
             {activeTab === 'closet' && renderCloset()}
           </motion.div>
         </AnimatePresence>
+        {renderFeedingLog()}
       </main>
 
       {/* Navigation */}
