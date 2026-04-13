@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings, History } from 'lucide-react';
+import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings, History, Volume2, VolumeX } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
@@ -97,6 +97,11 @@ export default function App() {
   const [isResetConfirming, setIsResetConfirming] = useState(false);
   const [isManagingTasks, setIsManagingTasks] = useState(false);
   const [isManagingShop, setIsManagingShop] = useState(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pet_muted');
+    return saved === 'true';
+  });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [tempPetName, setTempPetName] = useState('');
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: '',
@@ -128,7 +133,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('pet_tasks', JSON.stringify(completedTaskIds));
-    localStorage.setItem('pet_last_reset', new Date().toLocaleDateString());
+    localStorage.setItem('pet_last_reset', new Date().toISOString().split('T')[0]);
   }, [completedTaskIds]);
 
   useEffect(() => {
@@ -142,6 +147,30 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pet_daily_actions', JSON.stringify(dailyActions));
   }, [dailyActions]);
+
+  useEffect(() => {
+    localStorage.setItem('pet_muted', isMuted.toString());
+  }, [isMuted]);
+
+  const playSound = (type: 'task' | 'eat' | 'play' | 'buy') => {
+    if (isMuted) return;
+    
+    const sounds = {
+      task: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
+      eat: 'https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3',
+      play: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
+      buy: 'https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3'
+    };
+
+    const audio = new Audio(sounds[type]);
+    audio.volume = 0.4;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const resetGame = () => {
     localStorage.clear();
@@ -228,6 +257,7 @@ export default function App() {
     
     setPoints(prev => prev + task.points);
     setCompletedTaskIds(prev => [...prev, task.id]);
+    playSound('task');
     
     confetti({
       particleCount: 50,
@@ -240,8 +270,10 @@ export default function App() {
     if (points >= item.price) {
       setPoints(prev => prev - item.price);
       setInventory(prev => [...prev, item.id]);
+      playSound('buy');
+      showToast(`成功购买了 ${item.name}！`, 'success');
     } else {
-      alert('积分不够哦，快去完成任务吧！');
+      showToast('积分不够哦，快去完成任务吧！', 'error');
     }
   };
 
@@ -251,8 +283,12 @@ export default function App() {
     if (!item) return;
 
     if (item.type === 'food') {
+      // Switch to home tab to see the animation
+      setActiveTab('home');
+      
       setIsActionAnimating(prev => ({ ...prev, eating: true }));
-      setTimeout(() => setIsActionAnimating(prev => ({ ...prev, eating: false })), 2000);
+      setTimeout(() => setIsActionAnimating(prev => ({ ...prev, eating: false })), 3000);
+      playSound('eat');
       
       const newHunger = Math.min(100, pet.hunger + (item.effect?.hunger || 0));
       
@@ -292,6 +328,7 @@ export default function App() {
     setPoints(prev => prev - 5);
     setIsActionAnimating(prev => ({ ...prev, playing: true }));
     setTimeout(() => setIsActionAnimating(prev => ({ ...prev, playing: false })), 2000);
+    playSound('play');
     
     setPet({ 
       ...pet, 
@@ -580,6 +617,24 @@ export default function App() {
     </div>
   );
 
+  const renderToast = () => (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: 50, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: 20, x: '-50%' }}
+          className={`fixed bottom-24 left-1/2 z-[200] px-6 py-3 rounded-2xl shadow-xl text-white font-bold flex items-center space-x-2 min-w-[200px] justify-center ${
+            toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}
+        >
+          <span>{toast.type === 'success' ? '✅' : '❌'}</span>
+          <span>{toast.message}</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   const renderFeedingLog = () => {
     // Group logs by date
     const groupedLogs = activityLog.reduce((acc, log) => {
@@ -827,6 +882,13 @@ export default function App() {
         </h1>
         <div className="flex items-center space-x-3">
           <button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+            title={isMuted ? "取消静音" : "静音"}
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+          <button 
             onClick={() => window.location.reload()}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
             title="刷新页面"
@@ -857,6 +919,7 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
         {renderFeedingLog()}
+        {renderToast()}
       </main>
 
       {/* Navigation */}

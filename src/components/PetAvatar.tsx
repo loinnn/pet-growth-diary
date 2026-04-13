@@ -43,6 +43,49 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center w-72 h-[380px]">
+      {/* Food Particles Animation */}
+      <AnimatePresence>
+        {isEating && (
+          <div className="absolute inset-0 pointer-events-none z-50">
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ 
+                  opacity: 0, 
+                  scale: 0,
+                  x: "50%", 
+                  y: "40%" 
+                }}
+                animate={{ 
+                  opacity: [0, 1, 0],
+                  scale: [0, 1, 0.5],
+                  x: `${40 + Math.random() * 20}%`,
+                  y: `${30 + Math.random() * 20}%`,
+                  rotate: Math.random() * 360
+                }}
+                transition={{ 
+                  duration: 0.8, 
+                  repeat: Infinity, 
+                  delay: i * 0.1,
+                  ease: "easeOut" 
+                }}
+                className="absolute text-xl"
+              >
+                {['✨', '🍪', '🍰', '🧁'][i % 4]}
+              </motion.div>
+            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: [0, 1, 0], y: -40 }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="absolute top-[35%] left-1/2 -translate-x-1/2 text-pink-500 font-black text-xl italic"
+            >
+              NOM NOM!
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Background Glow - Very soft */}
       <motion.div
         animate={{
@@ -167,10 +210,14 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
             {/* Nose & Mouth */}
             <div className="flex flex-col items-center -mt-1">
               <div className="w-3 h-2 bg-pink-600/40 rounded-full mb-0.5" />
-              <div className="flex -space-x-0.5">
+              <motion.div 
+                animate={isEating ? { scaleY: [1, 1.5, 1], scaleX: [1, 1.2, 1] } : {}}
+                transition={{ duration: 0.3, repeat: Infinity }}
+                className="flex -space-x-0.5"
+              >
                 <div className="w-3 h-3 border-b-2 border-l-2 border-black/20 rounded-bl-full rotate-[-45deg]" />
                 <div className="w-3 h-3 border-b-2 border-r-2 border-black/20 rounded-br-full rotate-[45deg]" />
-              </div>
+              </motion.div>
             </div>
           </div>
 
