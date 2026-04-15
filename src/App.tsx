@@ -384,13 +384,13 @@ export default function App() {
           let happinessDrop = 0;
 
           // Penalty for the last active day
-          if (!actions.fed) hungerDrop += 5;
-          if (!actions.played) happinessDrop += 5;
+          if (!actions.fed) hungerDrop += 10;
+          if (!actions.played) happinessDrop += 10;
 
           // Penalty for fully missed days in between
           if (diffDays > 1) {
-            hungerDrop += (diffDays - 1) * 5;
-            happinessDrop += (diffDays - 1) * 5;
+            hungerDrop += (diffDays - 1) * 10;
+            happinessDrop += (diffDays - 1) * 10;
           }
 
           return {
