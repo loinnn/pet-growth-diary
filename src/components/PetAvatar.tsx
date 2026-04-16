@@ -219,10 +219,12 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
                 <div className="w-3 h-3 border-b-2 border-r-2 border-black/20 rounded-br-full rotate-[45deg]" />
               </motion.div>
             </div>
-          </div>
 
-          {/* Outfit: Glasses */}
-          {outfit.includes('i3') && <div className="absolute top-20 text-7xl z-30 filter drop-shadow-md">🕶️</div>}
+            {/* Glasses moved here to be relative to the face */}
+            {outfit.includes('i3') && (
+              <div className="absolute top-11 text-7xl z-30 filter drop-shadow-md">🕶️</div>
+            )}
+          </div>
           {/* Outfit: Hats */}
           {outfit.includes('i4') && <div className="absolute -top-16 text-8xl z-30 drop-shadow-lg">👒</div>}
           {outfit.includes('i9') && <div className="absolute -top-20 text-8xl z-30 drop-shadow-lg">👑</div>}
@@ -249,7 +251,23 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
 
           {/* Outfit: Cloak */}
           {outfit.includes('i10') && (
-            <div className="absolute inset-0 bg-red-500/40 border-t-[15px] border-red-400/50 rounded-t-[30px]" />
+            <div className="absolute inset-0 z-20">
+              {/* Main Cloak Body */}
+              <div className="absolute inset-0 bg-red-600 border-t-[12px] border-red-500 rounded-t-[30px] shadow-inner" />
+              {/* Collar */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-8 flex justify-between px-2">
+                <div className="w-12 h-10 bg-red-700 rounded-br-3xl rotate-[-15deg] border-r-2 border-red-800/30" />
+                <div className="w-12 h-10 bg-red-700 rounded-bl-3xl rotate-[15deg] border-l-2 border-red-800/30" />
+              </div>
+              {/* Buttons */}
+              <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col space-y-3">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
+                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
+                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
+              </div>
+              {/* Lapels/Opening */}
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-full bg-red-800/20" />
+            </div>
           )}
 
           {/* Outfit: Bow */}
@@ -260,16 +278,23 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
         <motion.div 
           animate={isPlaying ? { rotate: [0, 140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, 10, 0] }}
           transition={{ duration: 0.4, repeat: Infinity }}
-          className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10"
+          className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10 z-20"
           style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
         >
-          {outfit.includes('i6') && <span className="absolute -bottom-8 -left-6 text-6xl transform -rotate-15">🪄</span>}
+          {outfit.includes('i6') && (
+            <span 
+              className="absolute bottom-[15px] left-[calc(50%-30px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+              style={{ transform: 'scaleX(-1) rotate(40deg)', transformOrigin: 'center center' }}
+            >
+              🪄
+            </span>
+          )}
         </motion.div>
         
         <motion.div 
           animate={isPlaying ? { rotate: [0, -140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, -10, 0] }}
           transition={{ duration: 0.4, repeat: Infinity }}
-          className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10"
+          className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
           style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
         >
           {outfit.includes('i11') && <span className="absolute -top-12 -right-8 text-6xl">🎈</span>}
