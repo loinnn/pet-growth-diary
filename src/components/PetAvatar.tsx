@@ -299,7 +299,14 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
           style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
         >
-          {outfit.includes('i11') && <span className="absolute -top-16 left-1/2 -translate-x-1/2 text-6xl">🎈</span>}
+          {outfit.includes('i11') && (
+            <span 
+              className="absolute bottom-[15px] left-[calc(50%+25px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+              style={{ transform: 'rotate(40deg)', transformOrigin: 'center center' }}
+            >
+              🎈
+            </span>
+          )}
         </motion.div>
 
         {/* Legs - Simple Stubs */}
