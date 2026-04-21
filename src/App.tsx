@@ -106,16 +106,16 @@ export default function App() {
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: '',
     description: '',
-    points: 5,
+    points: undefined,
     category: 'life',
     icon: '📝'
   });
   const [newItem, setNewItem] = useState<Partial<Item>>({
     name: '',
-    price: 50,
+    price: undefined,
     type: 'food',
     image: '🎁',
-    effect: { hunger: 0, happiness: 0 }
+    effect: { hunger: undefined, happiness: undefined }
   });
 
   // --- Persistence ---
@@ -190,12 +190,12 @@ export default function App() {
       id: 'custom-' + Date.now(),
       title: newTask.title,
       description: newTask.description || '',
-      points: newTask.points || 5,
+      points: newTask.points || 0,
       category: newTask.category as any || 'life',
       icon: newTask.icon || '📝'
     };
     setTasks(prev => [...prev, task]);
-    setNewTask({ title: '', description: '', points: 5, category: 'life', icon: '📝' });
+    setNewTask({ title: '', description: '', points: undefined, category: 'life', icon: '📝' });
   };
 
   const deleteTask = (id: string) => {
@@ -207,13 +207,16 @@ export default function App() {
     const item: Item = {
       id: 'custom-item-' + Date.now(),
       name: newItem.name,
-      price: newItem.price || 50,
+      price: newItem.price || 0,
       type: newItem.type as any || 'food',
       image: newItem.image || '🎁',
-      effect: newItem.effect || { hunger: 0, happiness: 0 }
+      effect: {
+        hunger: newItem.effect?.hunger || 0,
+        happiness: newItem.effect?.happiness || 0
+      }
     };
     setShopItems(prev => [...prev, item]);
-    setNewItem({ name: '', price: 50, type: 'food', image: '🎁', effect: { hunger: 0, happiness: 0 } });
+    setNewItem({ name: '', price: undefined, type: 'food', image: '🎁', effect: { hunger: undefined, happiness: undefined } });
   };
 
   const deleteShopItem = (id: string) => {
@@ -570,6 +573,7 @@ export default function App() {
             isEating={isActionAnimating.eating}
             isPlaying={isActionAnimating.playing}
             outfit={pet.outfit}
+            allShopItems={shopItems}
           />
 
           <div className="flex space-x-8">
@@ -994,8 +998,11 @@ export default function App() {
                     <span className="text-xs text-gray-400 shrink-0 whitespace-nowrap">价格:</span>
                     <input
                       type="number"
-                      value={newItem.price}
-                      onChange={e => setNewItem({...newItem, price: parseInt(e.target.value) || 0})}
+                      value={newItem.price ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewItem({...newItem, price: val === '' ? undefined : parseInt(val)});
+                      }}
                       className="w-full bg-transparent border-none text-sm font-bold outline-none"
                     />
                   </div>
@@ -1014,8 +1021,11 @@ export default function App() {
                     <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">饱食度+:</span>
                     <input
                       type="number"
-                      value={newItem.effect?.hunger}
-                      onChange={e => setNewItem({...newItem, effect: { ...newItem.effect!, hunger: parseInt(e.target.value) || 0 }})}
+                      value={newItem.effect?.hunger ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewItem({...newItem, effect: { ...newItem.effect!, hunger: val === '' ? undefined : parseInt(val) }});
+                      }}
                       className="w-full bg-transparent border-none text-sm font-bold outline-none"
                     />
                   </div>
@@ -1023,8 +1033,11 @@ export default function App() {
                     <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">心情+:</span>
                     <input
                       type="number"
-                      value={newItem.effect?.happiness}
-                      onChange={e => setNewItem({...newItem, effect: { ...newItem.effect!, happiness: parseInt(e.target.value) || 0 }})}
+                      value={newItem.effect?.happiness ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewItem({...newItem, effect: { ...newItem.effect!, happiness: val === '' ? undefined : parseInt(val) }});
+                      }}
                       className="w-full bg-transparent border-none text-sm font-bold outline-none"
                     />
                   </div>
@@ -1124,8 +1137,11 @@ export default function App() {
                     <Star className="w-3 h-3 text-yellow-500" />
                     <input
                       type="number"
-                      value={newTask.points}
-                      onChange={e => setNewTask({...newTask, points: parseInt(e.target.value) || 0})}
+                      value={newTask.points ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewTask({...newTask, points: val === '' ? undefined : parseInt(val)});
+                      }}
                       className="w-8 bg-transparent border-none text-sm font-bold outline-none text-center"
                     />
                   </div>

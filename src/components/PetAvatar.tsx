@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star } from 'lucide-react';
-import { PetType } from '../types';
+import { PetType, Item } from '../types';
 import { PET_TEMPLATES } from '../constants';
 
 interface PetAvatarProps {
@@ -12,6 +12,7 @@ interface PetAvatarProps {
   isEating?: boolean;
   isPlaying?: boolean;
   outfit: string[];
+  allShopItems?: Item[];
 }
 
 export const PetAvatar: React.FC<PetAvatarProps> = ({ 
@@ -21,7 +22,8 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
   happiness, 
   isEating, 
   isPlaying, 
-  outfit 
+  outfit,
+  allShopItems = []
 }) => {
   const template = PET_TEMPLATES[type];
   
@@ -222,12 +224,12 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
 
             {/* Glasses moved here to be relative to the face */}
             {outfit.includes('i3') && (
-              <div className="absolute top-11 text-7xl z-30 filter drop-shadow-md">🕶️</div>
+              <div className="absolute top-11 left-1/2 -translate-x-1/2 text-7xl z-30 filter drop-shadow-md">🕶️</div>
             )}
           </div>
           {/* Outfit: Hats */}
-          {outfit.includes('i4') && <div className="absolute -top-16 text-8xl z-30 drop-shadow-lg">👒</div>}
-          {outfit.includes('i9') && <div className="absolute -top-20 text-8xl z-30 drop-shadow-lg">👑</div>}
+          {outfit.includes('i4') && <div className="absolute -top-16 left-1/2 -translate-x-1/2 text-8xl z-30 drop-shadow-lg">👒</div>}
+          {outfit.includes('i9') && <div className="absolute -top-20 left-1/2 -translate-x-1/2 text-8xl z-30 drop-shadow-lg">👑</div>}
         </div>
 
         {/* Torso - Detailed Clothing */}
@@ -271,7 +273,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           )}
 
           {/* Outfit: Bow */}
-          {outfit.includes('i5') && <div className="absolute -top-3 text-6xl z-30 filter drop-shadow-md">🎀</div>}
+          {outfit.includes('i5') && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-md">🎀</div>}
         </div>
 
         {/* Arms - Simple Paws */}
@@ -297,7 +299,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
           style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
         >
-          {outfit.includes('i11') && <span className="absolute -top-12 -right-8 text-6xl">🎈</span>}
+          {outfit.includes('i11') && <span className="absolute -top-16 left-1/2 -translate-x-1/2 text-6xl">🎈</span>}
         </motion.div>
 
         {/* Legs - Simple Stubs */}
@@ -322,6 +324,24 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
           <span>LV.{level}</span>
         </motion.div>
+
+        {/* Custom Items / Companions */}
+        <div className="absolute -bottom-4 -right-16 flex flex-wrap-reverse flex-row-reverse max-w-[120px] pointer-events-none">
+          {outfit.filter(id => !['i3', 'i4', 'i5', 'i6', 'i9', 'i10', 'i11'].includes(id)).map(id => {
+            const item = allShopItems.find(i => i.id === id);
+            if (!item) return null;
+            return (
+              <motion.div 
+                key={id}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-5xl filter drop-shadow-md m-1"
+              >
+                {item.image}
+              </motion.div>
+            );
+          })}
+        </div>
       </motion.div>
 
       {/* Shadow - Subtle */}
