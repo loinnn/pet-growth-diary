@@ -6,6 +6,24 @@ import { Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
 import { PetAvatar } from './components/PetAvatar';
 
+// --- Utils ---
+const getBeijingDate = () => {
+  // ISOString is always UTC. 
+  // To get Beijing (UTC+8) date, we add 8 hours to the timestamp then take the date part.
+  const now = new Date();
+  const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  return beijingTime.toISOString().split('T')[0];
+};
+
+const getBeijingTimeString = () => {
+  return new Date().toLocaleTimeString('zh-CN', { 
+    timeZone: 'Asia/Shanghai', 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    hour12: false 
+  });
+};
+
 export default function App() {
   // --- State ---
   const [points, setPoints] = useState<number>(() => {
@@ -25,7 +43,7 @@ export default function App() {
   
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('pet_tasks');
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBeijingDate();
     const lastReset = localStorage.getItem('pet_last_reset');
     
     if (lastReset !== today) {
@@ -67,7 +85,7 @@ export default function App() {
 
   const [dailyActions, setDailyActions] = useState<{ fed: boolean; played: boolean }>(() => {
     const saved = localStorage.getItem('pet_daily_actions');
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBeijingDate();
     const lastActive = localStorage.getItem('pet_last_active_date');
     
     if (lastActive !== today) {
@@ -133,7 +151,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('pet_tasks', JSON.stringify(completedTaskIds));
-    localStorage.setItem('pet_last_reset', new Date().toISOString().split('T')[0]);
+    localStorage.setItem('pet_last_reset', getBeijingDate());
   }, [completedTaskIds]);
 
   useEffect(() => {
@@ -305,8 +323,8 @@ export default function App() {
 
       // Record activity log
       const newRecord = {
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        date: getBeijingDate(),
+        time: getBeijingTimeString(),
         type: 'feed' as const,
         detail: item.name
       };
@@ -342,8 +360,8 @@ export default function App() {
 
     // Record activity log
     const newRecord = {
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: getBeijingDate(),
+      time: getBeijingTimeString(),
       type: 'play' as const,
       detail: '陪它玩耍'
     };
@@ -366,7 +384,7 @@ export default function App() {
   useEffect(() => {
     if (!pet) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBeijingDate();
     const lastActive = localStorage.getItem('pet_last_active_date');
     
     if (lastActive && lastActive !== today) {
