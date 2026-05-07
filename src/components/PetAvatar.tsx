@@ -322,14 +322,14 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
               <motion.div 
                 animate={isPlaying ? { rotate: [0, 140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, 10, 0] }}
                 transition={{ duration: 0.4, repeat: Infinity }}
-                className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10 z-20 flex items-center justify-center"
+                className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10 z-20"
                 style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
               >
                 {leftHandItems.map((item, index) => (
                   <span 
                     key={item?.id || index}
-                    className="absolute bottom-4 -left-6 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
-                    style={{ transform: 'scaleX(-1) rotate(20deg)', transformOrigin: 'center' }}
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
+                    style={{ transform: 'scaleX(-1) rotate(15deg)', transformOrigin: 'center' }}
                   >
                     {item?.image}
                   </span>
@@ -340,14 +340,14 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
               <motion.div 
                 animate={isPlaying ? { rotate: [0, -140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, -10, 0] }}
                 transition={{ duration: 0.4, repeat: Infinity }}
-                className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20 flex items-center justify-center"
+                className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
                 style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
               >
                 {rightHandItems.map((item, index) => (
                   <span 
                     key={item?.id || index}
-                    className="absolute bottom-4 -right-6 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
-                    style={{ transform: 'rotate(20deg)', transformOrigin: 'center' }}
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
+                    style={{ transform: 'rotate(15deg)', transformOrigin: 'center' }}
                   >
                     {item?.image}
                   </span>
