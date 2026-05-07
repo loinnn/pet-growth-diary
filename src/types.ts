@@ -25,7 +25,7 @@ export interface Item {
   id: string;
   name: string;
   price: number;
-  type: 'food' | 'clothes' | 'accessory';
+  type: 'food' | 'clothes' | 'head_accessory' | 'hand_accessory' | 'toy';
   image: string;
   effect?: {
     hunger?: number;

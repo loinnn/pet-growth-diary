@@ -200,6 +200,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
             <AnimatePresence>
               {(isHappy || !isSad) && (
                 <motion.div 
+                   key="blush"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 0.5 }}
                   className="absolute flex justify-between w-36 px-2 mt-4"
@@ -222,14 +223,35 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
               </motion.div>
             </div>
 
-            {/* Glasses moved here to be relative to the face */}
+            {/* Glasses (Preset) */}
             {outfit.includes('i3') && (
               <div className="absolute top-11 left-1/2 -translate-x-1/2 text-7xl z-30 filter drop-shadow-md">🕶️</div>
             )}
           </div>
-          {/* Outfit: Hats */}
-          {outfit.includes('i4') && <div className="absolute -top-16 left-1/2 -translate-x-1/2 text-8xl z-30 drop-shadow-lg">👒</div>}
-          {outfit.includes('i9') && <div className="absolute -top-20 left-1/2 -translate-x-1/2 text-8xl z-30 drop-shadow-lg">👑</div>}
+          
+          {/* Head Accessories (Presets + Custom) */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none z-30">
+            {outfit.map(id => {
+              const item = allShopItems.find(i => i.id === id);
+              if (item?.type !== 'head_accessory' || id === 'i3') return null;
+              
+              // Special presets
+              if (id === 'i4') return <div key={id} className="absolute -top-6 left-1/2 -translate-x-1/2 text-8xl drop-shadow-lg">👒</div>;
+              if (id === 'i9') return <div key={id} className="absolute -top-10 left-1/2 -translate-x-1/2 text-8xl drop-shadow-lg">👑</div>;
+              
+              // Custom head accessories
+              return (
+                <motion.div 
+                  key={id} 
+                  initial={{ scale: 0 }} 
+                  animate={{ scale: 1 }} 
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 text-7xl filter drop-shadow-lg"
+                >
+                  {item.image}
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Torso - Detailed Clothing */}
@@ -241,8 +263,44 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
             filter: 'brightness(0.95)' 
           }}
         >
-          {/* Shirt/Clothing Layer */}
+          {/* Torso Items Layer */}
           <div className="absolute inset-x-0 top-0 h-full bg-white/40 flex flex-col items-center">
+            {outfit.map(id => {
+              const item = allShopItems.find(i => i.id === id);
+              if (item?.type !== 'clothes') return null;
+
+              // Preset special: Cloak
+              if (id === 'i10') return (
+                <div key={id} className="absolute inset-0 z-20">
+                  <div className="absolute inset-0 bg-[#d2b48c] border-t-[12px] border-[#eaddca] rounded-t-[30px] shadow-inner" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-8 flex justify-between px-2">
+                    <div className="w-12 h-10 bg-[#c19a6b] rounded-br-3xl rotate-[-15deg] border-r-2 border-black/10" />
+                    <div className="w-12 h-10 bg-[#c19a6b] rounded-bl-3xl rotate-[15deg] border-l-2 border-black/10" />
+                  </div>
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col space-y-3">
+                    <div className="w-3 h-3 bg-amber-900/40 rounded-full shadow-sm border border-black/5" />
+                    <div className="w-3 h-3 bg-amber-900/40 rounded-full shadow-sm border border-black/5" />
+                  </div>
+                  <div className="absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-full bg-black/5" />
+                </div>
+              );
+
+              // Preset special: Bowtie
+              if (id === 'i5') return <div key={id} className="absolute -top-3 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-md">🎀</div>;
+
+              // Custom Apparel Overlay
+              return (
+                <motion.div 
+                  key={id} 
+                  initial={{ scale: 0, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="absolute inset-0 flex items-center justify-center text-[5.5rem] z-10 leading-none"
+                >
+                  <span className="mt-2">{item.image}</span>
+                </motion.div>
+              );
+            })}
+
             <div className="w-full h-1/3 bg-white/30 border-b border-white/10 flex justify-center items-center">
               <div className="w-12 h-4 bg-white/20 rounded-full" />
             </div>
@@ -250,64 +308,52 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
             {/* Belly patch */}
             <div className="absolute bottom-[-10px] w-20 h-20 bg-white/20 rounded-full blur-[5px]" />
           </div>
-
-          {/* Outfit: Cloak */}
-          {outfit.includes('i10') && (
-            <div className="absolute inset-0 z-20">
-              {/* Main Cloak Body */}
-              <div className="absolute inset-0 bg-red-600 border-t-[12px] border-red-500 rounded-t-[30px] shadow-inner" />
-              {/* Collar */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-8 flex justify-between px-2">
-                <div className="w-12 h-10 bg-red-700 rounded-br-3xl rotate-[-15deg] border-r-2 border-red-800/30" />
-                <div className="w-12 h-10 bg-red-700 rounded-bl-3xl rotate-[15deg] border-l-2 border-red-800/30" />
-              </div>
-              {/* Buttons */}
-              <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col space-y-3">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
-                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
-                <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm border border-yellow-600" />
-              </div>
-              {/* Lapels/Opening */}
-              <div className="absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-full bg-red-800/20" />
-            </div>
-          )}
-
-          {/* Outfit: Bow */}
-          {outfit.includes('i5') && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-md">🎀</div>}
         </div>
 
-        {/* Arms - Simple Paws */}
-        <motion.div 
-          animate={isPlaying ? { rotate: [0, 140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, 10, 0] }}
-          transition={{ duration: 0.4, repeat: Infinity }}
-          className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10 z-20"
-          style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
-        >
-          {outfit.includes('i6') && (
-            <span 
-              className="absolute bottom-[15px] left-[calc(50%-30px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-              style={{ transform: 'scaleX(-1) rotate(40deg)', transformOrigin: 'center center' }}
-            >
-              🪄
-            </span>
-          )}
-        </motion.div>
-        
-        <motion.div 
-          animate={isPlaying ? { rotate: [0, -140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, -10, 0] }}
-          transition={{ duration: 0.4, repeat: Infinity }}
-          className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
-          style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
-        >
-          {outfit.includes('i11') && (
-            <span 
-              className="absolute bottom-[15px] left-[calc(50%+25px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-              style={{ transform: 'rotate(40deg)', transformOrigin: 'center center' }}
-            >
-              🎈
-            </span>
-          )}
-        </motion.div>
+        {/* Arms - Hand Accessories Distribution */}
+        {(() => {
+          const handAccessories = outfit.map(id => allShopItems.find(i => i.id === id)).filter(item => item?.type === 'hand_accessory');
+          const leftHandItems = handAccessories.filter((_, i) => i % 2 === 0);
+          const rightHandItems = handAccessories.filter((_, i) => i % 2 !== 0);
+
+          return (
+            <>
+              <motion.div 
+                animate={isPlaying ? { rotate: [0, 140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, 10, 0] }}
+                transition={{ duration: 0.4, repeat: Infinity }}
+                className="absolute -left-8 top-36 w-10 h-16 rounded-full origin-top-right shadow-md border-r-[4px] border-white/10 z-20"
+                style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
+              >
+                {leftHandItems.map((item, index) => (
+                  <span 
+                    key={item?.id || index}
+                    className="absolute bottom-[20px] left-[calc(50%-30px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+                    style={{ transform: 'scaleX(-1) rotate(40deg)', transformOrigin: 'bottom center' }}
+                  >
+                    {item?.image}
+                  </span>
+                ))}
+              </motion.div>
+              
+              <motion.div 
+                animate={isPlaying ? { rotate: [0, -140, 0] } : isEating ? { y: [0, -10, 0] } : { rotate: [0, -10, 0] }}
+                transition={{ duration: 0.4, repeat: Infinity }}
+                className="absolute -right-8 top-36 w-10 h-16 rounded-full origin-top-left shadow-md border-l-[4px] border-white/10 z-20"
+                style={{ backgroundColor: template.color, filter: 'brightness(0.9)' }}
+              >
+                {rightHandItems.map((item, index) => (
+                  <span 
+                    key={item?.id || index}
+                    className="absolute bottom-[20px] left-[calc(50%+30px)] -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+                    style={{ transform: 'rotate(40deg)', transformOrigin: 'bottom center' }}
+                  >
+                    {item?.image}
+                  </span>
+                ))}
+              </motion.div>
+            </>
+          );
+        })()}
 
         {/* Legs - Simple Stubs */}
         <div className="flex space-x-16 -mt-6">
@@ -332,23 +378,43 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
           <span>LV.{level}</span>
         </motion.div>
 
-        {/* Custom Items / Companions */}
-        <div className="absolute -bottom-4 -right-16 flex flex-wrap-reverse flex-row-reverse max-w-[120px] pointer-events-none">
-          {outfit.filter(id => !['i3', 'i4', 'i5', 'i6', 'i9', 'i10', 'i11'].includes(id)).map(id => {
-            const item = allShopItems.find(i => i.id === id);
-            if (!item) return null;
-            return (
-              <motion.div 
-                key={id}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-5xl filter drop-shadow-md m-1"
-              >
-                {item.image}
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* Custom Items / Toys / Companions - Distributed on both sides */}
+        {(() => {
+          const toys = outfit.map(id => allShopItems.find(i => i.id === id)).filter(item => item?.type === 'toy');
+          const leftToys = toys.filter((_, i) => i % 2 === 0);
+          const rightToys = toys.filter((_, i) => i % 2 !== 0);
+
+          return (
+            <>
+              {/* Left Toys */}
+              <div className="absolute -bottom-2 -left-16 flex flex-wrap flex-row max-w-[100px] pointer-events-none gap-2">
+                {leftToys.map((item, index) => (
+                  <motion.div 
+                    key={item?.id || index}
+                    initial={{ scale: 0, x: -20, opacity: 0 }}
+                    animate={{ scale: 1, x: 0, opacity: 1 }}
+                    className="text-5xl filter drop-shadow-md"
+                  >
+                    {item?.image}
+                  </motion.div>
+                ))}
+              </div>
+              {/* Right Toys */}
+              <div className="absolute -bottom-2 -right-16 flex flex-wrap-reverse flex-row-reverse max-w-[100px] pointer-events-none gap-2">
+                {rightToys.map((item, index) => (
+                  <motion.div 
+                    key={item?.id || index}
+                    initial={{ scale: 0, x: 20, opacity: 0 }}
+                    animate={{ scale: 1, x: 0, opacity: 1 }}
+                    className="text-5xl filter drop-shadow-md"
+                  >
+                    {item?.image}
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </motion.div>
 
       {/* Shadow - Subtle */}

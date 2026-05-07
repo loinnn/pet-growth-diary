@@ -115,6 +115,7 @@ export default function App() {
   const [isResetConfirming, setIsResetConfirming] = useState(false);
   const [isManagingTasks, setIsManagingTasks] = useState(false);
   const [isManagingShop, setIsManagingShop] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     const saved = localStorage.getItem('pet_muted');
     return saved === 'true';
@@ -222,23 +223,56 @@ export default function App() {
 
   const addShopItem = () => {
     if (!newItem.name) return;
-    const item: Item = {
-      id: 'custom-item-' + Date.now(),
-      name: newItem.name,
-      price: newItem.price || 0,
-      type: newItem.type as any || 'food',
-      image: newItem.image || '🎁',
-      effect: {
-        hunger: newItem.effect?.hunger || 0,
-        happiness: newItem.effect?.happiness || 0
-      }
-    };
-    setShopItems(prev => [...prev, item]);
+
+    if (editingItemId) {
+      setShopItems(prev => prev.map(item => {
+        if (item.id === editingItemId) {
+          return {
+            ...item,
+            name: newItem.name!,
+            price: newItem.price || 0,
+            type: newItem.type as any || 'food',
+            image: newItem.image || '🎁',
+            effect: {
+              hunger: newItem.effect?.hunger || 0,
+              happiness: newItem.effect?.happiness || 0
+            }
+          };
+        }
+        return item;
+      }));
+      setEditingItemId(null);
+    } else {
+      const item: Item = {
+        id: 'custom-item-' + Date.now(),
+        name: newItem.name,
+        price: newItem.price || 0,
+        type: newItem.type as any || 'food',
+        image: newItem.image || '🎁',
+        effect: {
+          hunger: newItem.effect?.hunger || 0,
+          happiness: newItem.effect?.happiness || 0
+        }
+      };
+      setShopItems(prev => [...prev, item]);
+    }
     setNewItem({ name: '', price: undefined, type: 'food', image: '🎁', effect: { hunger: undefined, happiness: undefined } });
+  };
+
+  const startEditingItem = (item: Item) => {
+    setEditingItemId(item.id);
+    setNewItem({
+      name: item.name,
+      price: item.price,
+      type: item.type,
+      image: item.image,
+      effect: item.effect || { hunger: 0, happiness: 0 }
+    });
   };
 
   const deleteShopItem = (id: string) => {
     setShopItems(prev => prev.filter(i => i.id !== id));
+    if (editingItemId === id) setEditingItemId(null);
   };
 
   // --- Actions ---
@@ -993,8 +1027,22 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Add New Item Form */}
-              <div className="bg-orange-50 p-4 rounded-2xl mb-6 space-y-3">
+              {/* Add/Edit Item Form */}
+              <div className={`${editingItemId ? 'bg-blue-50' : 'bg-orange-50'} p-4 rounded-2xl mb-6 space-y-3 transition-colors duration-300`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-gray-500">{editingItemId ? '⚡️ 正在编辑物品' : '✨ 添加新物品'}</span>
+                  {editingItemId && (
+                    <button 
+                      onClick={() => {
+                        setEditingItemId(null);
+                        setNewItem({ name: '', price: undefined, type: 'food', image: '🎁', effect: { hunger: undefined, happiness: undefined } });
+                      }}
+                      className="text-[10px] text-blue-500 hover:underline"
+                    >
+                      取消编辑
+                    </button>
+                  )}
+                </div>
                 <div className="flex space-x-2">
                   <input
                     type="text"
@@ -1029,9 +1077,11 @@ export default function App() {
                     onChange={e => setNewItem({...newItem, type: e.target.value as any})}
                     className="flex-1 bg-white border-none rounded-xl px-4 py-2 text-sm outline-none"
                   >
-                    <option value="food">食物</option>
-                    <option value="clothes">衣服</option>
-                    <option value="accessory">饰品</option>
+                    <option value="food">🍕 食物</option>
+                    <option value="clothes">👗 衣物</option>
+                    <option value="head_accessory">🎀 头饰</option>
+                    <option value="hand_accessory">🪄 手饰</option>
+                    <option value="toy">🧸 玩具</option>
                   </select>
                 </div>
                 <div className="flex space-x-2">
@@ -1062,10 +1112,10 @@ export default function App() {
                   <button
                     onClick={addShopItem}
                     disabled={!newItem.name}
-                    className="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-orange-600 disabled:opacity-50 flex items-center space-x-1"
+                    className={`${editingItemId ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600'} text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50 flex items-center space-x-1 transition-all`}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>添加</span>
+                    {editingItemId ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{editingItemId ? '保存' : '添加'}</span>
                   </button>
                 </div>
               </div>
@@ -1078,15 +1128,33 @@ export default function App() {
                       <span className="text-2xl">{item.image}</span>
                       <div>
                         <div className="text-sm font-bold text-gray-700">{item.name}</div>
-                        <div className="text-[10px] text-gray-400">{item.price} 积分 | {item.type === 'food' ? '食物' : '装扮'}</div>
+                        <div className="text-[10px] text-gray-400">
+                          {item.price} 积分 | {
+                            item.type === 'food' ? '🍕 食物' : 
+                            item.type === 'clothes' ? '👗 衣物' : 
+                            item.type === 'head_accessory' ? '🎀 头饰' : 
+                            item.type === 'hand_accessory' ? '🪄 手饰' : 
+                            '🧸 玩具'
+                          }
+                        </div>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deleteShopItem(item.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => startEditingItem(item)}
+                        className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        title="编辑"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => deleteShopItem(item.id)}
+                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
