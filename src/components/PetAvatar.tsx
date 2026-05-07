@@ -313,8 +313,8 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
         {/* Arms - Hand Accessories Distribution */}
         {(() => {
           const handAccessories = outfit.map(id => allShopItems.find(i => i.id === id)).filter(item => item?.type === 'hand_accessory');
-          const leftHandItems = handAccessories.filter((_, i) => i % 2 === 0);
-          const rightHandItems = handAccessories.filter((_, i) => i % 2 !== 0);
+          const leftHandItems = handAccessories.filter((_, i) => i % 2 !== 0);
+          const rightHandItems = handAccessories.filter((_, i) => i % 2 === 0);
 
           return (
             <>
@@ -328,7 +328,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
                 {leftHandItems.map((item, index) => (
                   <span 
                     key={item?.id || index}
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
                     style={{ transform: 'scaleX(-1) rotate(15deg)', transformOrigin: 'center' }}
                   >
                     {item?.image}
@@ -346,7 +346,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
                 {rightHandItems.map((item, index) => (
                   <span 
                     key={item?.id || index}
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
                     style={{ transform: 'rotate(15deg)', transformOrigin: 'center' }}
                   >
                     {item?.image}
