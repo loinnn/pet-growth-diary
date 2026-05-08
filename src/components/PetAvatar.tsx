@@ -346,7 +346,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
                 {rightHandItems.map((item, index) => (
                   <span 
                     key={item?.id || index}
-                    className="absolute bottom-[65%] left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
+                    className="absolute bottom-[85%] left-1/2 -translate-x-1/2 text-6xl z-30 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] select-none pointer-events-none"
                     style={{ transform: 'rotate(15deg)', transformOrigin: 'center' }}
                   >
                     {item?.image}
