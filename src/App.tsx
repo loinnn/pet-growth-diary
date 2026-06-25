@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Star, Utensils, ShoppingBag, BookOpen, Home, Shirt, CheckCircle2, Edit2, RefreshCcw, X, Plus, Trash2, Settings, History, Volume2, VolumeX } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Pet, Task, Item, PetType } from './types';
+import { ActivityLog, ActivityLogType, Pet, Task, Item, PetType } from './types';
 import { INITIAL_TASKS, SHOP_ITEMS, PET_TEMPLATES } from './constants';
 import { PetAvatar } from './components/PetAvatar';
 
@@ -94,7 +94,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : { fed: false, played: false };
   });
 
-  const [activityLog, setActivityLog] = useState<{date: string, time: string, type: 'feed' | 'play', detail: string}[]>(() => {
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>(() => {
     const saved = localStorage.getItem('pet_activity_log');
     return saved ? JSON.parse(saved) : [];
   });
@@ -116,6 +116,8 @@ export default function App() {
   const [isManagingTasks, setIsManagingTasks] = useState(false);
   const [isManagingShop, setIsManagingShop] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ fromLevel: number; toLevel: number; stage: string } | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     const saved = localStorage.getItem('pet_muted');
     return saved === 'true';
@@ -191,6 +193,41 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const addActivityLog = (type: ActivityLogType, detail: string, meta?: ActivityLog['meta']) => {
+    const newRecord: ActivityLog = {
+      date: getBeijingDate(),
+      time: getBeijingTimeString(),
+      type,
+      detail,
+      meta
+    };
+    setActivityLog(prev => [newRecord, ...prev].slice(0, 100));
+  };
+
+  const getStageLabel = (level: number) => {
+    if (level >= 8) return '终极形态';
+    if (level >= 4) return '成长期';
+    return '幼年期';
+  };
+
+  const getItemTypeLabel = (type: Item['type']) => {
+    const labels: Record<Item['type'], string> = {
+      food: '食物',
+      clothes: '衣物',
+      head_accessory: '头饰',
+      hand_accessory: '手饰',
+      toy: '玩具'
+    };
+    return labels[type];
+  };
+
+  const getItemEffectText = (item: Item) => {
+    if (item.type === 'food') {
+      return `饱食 +${item.effect?.hunger || 0} / 心情 +${item.effect?.happiness || 0} / 经验 +5`;
+    }
+    return '可装备到宠物外观';
+  };
+
   const resetGame = () => {
     localStorage.clear();
     setPet(null);
@@ -199,26 +236,46 @@ export default function App() {
     setCompletedTaskIds([]);
     setTasks(INITIAL_TASKS);
     setShopItems(SHOP_ITEMS);
+    setActivityLog([]);
+    setEditingTaskId(null);
+    setEditingItemId(null);
+    setLevelUpInfo(null);
     setIsResetConfirming(false);
     setActiveTab('home');
   };
 
-  const addTask = () => {
+  const saveTask = () => {
     if (!newTask.title) return;
     const task: Task = {
-      id: 'custom-' + Date.now(),
+      id: editingTaskId || 'custom-' + Date.now(),
       title: newTask.title,
       description: newTask.description || '',
       points: newTask.points || 0,
       category: newTask.category as any || 'life',
       icon: newTask.icon || '📝'
     };
-    setTasks(prev => [...prev, task]);
+    setTasks(prev => editingTaskId ? prev.map(t => t.id === editingTaskId ? task : t) : [...prev, task]);
     setNewTask({ title: '', description: '', points: undefined, category: 'life', icon: '📝' });
+    setEditingTaskId(null);
+  };
+
+  const startEditingTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setNewTask({
+      title: task.title,
+      description: task.description,
+      points: task.points,
+      category: task.category,
+      icon: task.icon
+    });
   };
 
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    if (editingTaskId === id) {
+      setEditingTaskId(null);
+      setNewTask({ title: '', description: '', points: undefined, category: 'life', icon: '📝' });
+    }
   };
 
   const addShopItem = () => {
@@ -312,6 +369,7 @@ export default function App() {
     
     setPoints(prev => prev + task.points);
     setCompletedTaskIds(prev => [...prev, task.id]);
+    addActivityLog('task', task.title, { points: task.points });
     playSound('task');
     
     confetti({
@@ -325,6 +383,7 @@ export default function App() {
     if (points >= item.price) {
       setPoints(prev => prev - item.price);
       setInventory(prev => [...prev, item.id]);
+      addActivityLog('buy', item.name, { points: -item.price, itemType: item.type });
       playSound('buy');
       showToast(`成功购买了 ${item.name}！`, 'success');
     } else {
@@ -346,23 +405,21 @@ export default function App() {
       playSound('eat');
       
       const newHunger = Math.min(100, pet.hunger + (item.effect?.hunger || 0));
+      const newHappiness = Math.min(100, pet.happiness + (item.effect?.happiness || 0));
       
       const index = inventory.indexOf(itemId);
       const newInv = [...inventory];
       if (index > -1) newInv.splice(index, 1);
 
-      setPet({ ...pet, hunger: newHunger, exp: pet.exp + 5 });
+      setPet({ ...pet, hunger: newHunger, happiness: newHappiness, exp: pet.exp + 5 });
       setInventory(newInv);
       setDailyActions(prev => ({ ...prev, fed: true }));
-
-      // Record activity log
-      const newRecord = {
-        date: getBeijingDate(),
-        time: getBeijingTimeString(),
-        type: 'feed' as const,
-        detail: item.name
-      };
-      setActivityLog(prev => [newRecord, ...prev].slice(0, 100));
+      addActivityLog('feed', item.name, {
+        hunger: item.effect?.hunger || 0,
+        happiness: item.effect?.happiness || 0,
+        exp: 5,
+        itemType: item.type
+      });
     } else {
       const isEquipped = pet.outfit.includes(itemId);
       const newOutfit = isEquipped 
@@ -370,6 +427,7 @@ export default function App() {
         : [...pet.outfit, itemId];
       
       setPet({ ...pet, outfit: newOutfit });
+      addActivityLog(isEquipped ? 'unequip' : 'equip', item.name, { itemType: item.type });
     }
   };
 
@@ -391,21 +449,17 @@ export default function App() {
       exp: pet.exp + 5
     });
     setDailyActions(prev => ({ ...prev, played: true }));
-
-    // Record activity log
-    const newRecord = {
-      date: getBeijingDate(),
-      time: getBeijingTimeString(),
-      type: 'play' as const,
-      detail: '陪它玩耍'
-    };
-    setActivityLog(prev => [newRecord, ...prev].slice(0, 100));
+    addActivityLog('play', '陪它玩耍', { points: -5, happiness: 10, exp: 5 });
   };
 
   // Level up logic
   useEffect(() => {
     if (pet && pet.exp >= pet.level * 100) {
-      setPet({ ...pet, level: pet.level + 1, exp: 0 });
+      const fromLevel = pet.level;
+      const toLevel = pet.level + 1;
+      setPet({ ...pet, level: toLevel, exp: 0 });
+      setLevelUpInfo({ fromLevel, toLevel, stage: getStageLabel(toLevel) });
+      addActivityLog('level', `升到 Lv.${toLevel}`, { fromLevel, toLevel });
       confetti({
         particleCount: 150,
         spread: 100,
@@ -648,12 +702,13 @@ export default function App() {
               <span className={`text-xs font-bold ${dailyActions.played ? 'text-pink-500' : 'text-gray-400'}`}>
                 {dailyActions.played ? '已玩耍' : '陪它玩'}
               </span>
+              <span className="text-[10px] font-bold text-gray-400">-5 积分 / 心情 +10 / 经验 +5</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveTab('shop')}
+                onClick={() => setActiveTab('closet')}
                 className={`p-4 rounded-full shadow-lg transition-all ${
                   dailyActions.fed 
                     ? 'bg-orange-400 text-white hover:bg-orange-500' 
@@ -665,6 +720,7 @@ export default function App() {
               <span className={`text-xs font-bold ${dailyActions.fed ? 'text-orange-500' : 'text-gray-400'}`}>
                 {dailyActions.fed ? '已进食' : '去喂食'}
               </span>
+              <span className="text-[10px] font-bold text-gray-400">打开背包选择食物</span>
             </div>
           </div>
         </>
@@ -700,6 +756,19 @@ export default function App() {
     }, {} as Record<string, typeof activityLog>);
 
     const sortedDates = Object.keys(groupedLogs).sort((a, b) => b.localeCompare(a));
+    const getLogStyle = (log: ActivityLog) => {
+      const loggedItem = shopItems.find(i => i.name === log.detail);
+      const styles: Record<ActivityLogType, { icon: string; label: string; badge: string; iconBg: string }> = {
+        feed: { icon: loggedItem?.image || '🍱', label: '喂食', badge: 'text-orange-500 bg-orange-50', iconBg: 'bg-orange-50' },
+        play: { icon: '🎮', label: '玩耍', badge: 'text-pink-500 bg-pink-50', iconBg: 'bg-pink-50' },
+        level: { icon: '🌟', label: `升级 ${log.meta?.fromLevel ? `Lv.${log.meta.fromLevel} → Lv.${log.meta?.toLevel}` : ''}`, badge: 'text-yellow-600 bg-yellow-50', iconBg: 'bg-yellow-50' },
+        task: { icon: '✅', label: `任务 +${log.meta?.points || 0} 积分`, badge: 'text-green-600 bg-green-50', iconBg: 'bg-green-50' },
+        buy: { icon: loggedItem?.image || '🛍️', label: `购买 花费 ${Math.abs(log.meta?.points || 0)} 积分`, badge: 'text-purple-600 bg-purple-50', iconBg: 'bg-purple-50' },
+        equip: { icon: loggedItem?.image || '👗', label: '装备', badge: 'text-blue-600 bg-blue-50', iconBg: 'bg-blue-50' },
+        unequip: { icon: loggedItem?.image || '📦', label: '卸下', badge: 'text-gray-600 bg-gray-100', iconBg: 'bg-gray-100' }
+      };
+      return styles[log.type] || styles.feed;
+    };
 
     return (
       <AnimatePresence>
@@ -745,29 +814,25 @@ export default function App() {
                         <div className="h-[1px] flex-1 bg-gray-100" />
                       </div>
                       <div className="space-y-2">
-                        {groupedLogs[date].map((log, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <div className="flex items-center space-x-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-xl ${
-                                log.type === 'feed' ? 'bg-orange-50' : 'bg-pink-50'
-                              }`}>
-                                {log.type === 'feed' 
-                                  ? (SHOP_ITEMS.find(i => i.name === log.detail)?.image || '🍱')
-                                  : '🎮'
-                                }
+                        {groupedLogs[date].map((log, index) => {
+                          const style = getLogStyle(log);
+                          return (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-xl ${style.iconBg}`}>
+                                  {style.icon}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-800">{log.detail}</p>
+                                  <p className="text-[10px] text-gray-400">{style.label}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-gray-800">{log.detail}</p>
-                                <p className="text-[10px] text-gray-400">{log.type === 'feed' ? '喂食' : '玩耍'}</p>
-                              </div>
+                              <span className={`text-xs font-black px-2 py-1 rounded-lg ${style.badge}`}>
+                                {log.time}
+                              </span>
                             </div>
-                            <span className={`text-xs font-black px-2 py-1 rounded-lg ${
-                              log.type === 'feed' ? 'text-orange-500 bg-orange-50' : 'text-pink-500 bg-pink-50'
-                            }`}>
-                              {log.time}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))
@@ -822,6 +887,7 @@ export default function App() {
                       <div>
                         <h4 className="font-bold text-gray-800">{task.title}</h4>
                         <p className="text-sm text-gray-500">{task.description}</p>
+                        <p className="text-[10px] font-bold text-green-500 mt-1">完成 +{task.points} 积分</p>
                       </div>
                     </div>
                     <button
@@ -872,11 +938,12 @@ export default function App() {
           >
             <span className="text-5xl">{item.image}</span>
             <h3 className="font-bold text-gray-800">{item.name}</h3>
+            <p className="text-[10px] font-bold text-gray-400">{getItemTypeLabel(item.type)} · {getItemEffectText(item)}</p>
             <button
               onClick={() => buyItem(item)}
               className="w-full bg-orange-100 text-orange-600 py-2 rounded-xl font-bold flex items-center justify-center space-x-1 hover:bg-orange-200 transition-colors"
             >
-              <span>{item.price}</span>
+              <span>{item.price} 积分</span>
               <Star className="w-4 h-4 fill-orange-600" />
             </button>
           </motion.div>
@@ -887,11 +954,11 @@ export default function App() {
 
   const renderCloset = () => (
     <div className="space-y-4 py-6">
-      <h2 className="text-2xl font-bold text-gray-800 px-4">我的衣橱</h2>
+      <h2 className="text-2xl font-bold text-gray-800 px-4">我的背包</h2>
       {inventory.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Shirt className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p>衣橱空空的，快去商店逛逛吧</p>
+          <p>背包还是空的，快去商店逛逛吧</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-4 px-4">
@@ -912,6 +979,11 @@ export default function App() {
               >
                 <span className="text-4xl block text-center">{item.image}</span>
                 <p className="text-xs text-center mt-2 font-bold text-gray-600">{item.name}</p>
+                <p className="text-[10px] text-center mt-1 text-gray-400 font-bold">{getItemTypeLabel(item.type)}</p>
+                <p className="text-[10px] text-center mt-1 text-blue-500 font-black">
+                  {item.type === 'food' ? '喂食' : isEquipped ? '已装备，点击卸下' : '装备'}
+                </p>
+                <p className="text-[10px] text-center mt-1 text-gray-400">{getItemEffectText(item)}</p>
                 {item.type === 'food' && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
                     x{count}
@@ -1002,11 +1074,40 @@ export default function App() {
           active={activeTab === 'closet'} 
           onClick={() => setActiveTab('closet')} 
           icon={<Shirt />} 
-          label="衣橱" 
+          label="背包" 
         />
       </nav>
 
       {/* Modals */}
+      <AnimatePresence>
+        {levelUpInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 24 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+            >
+              <div className="text-6xl mb-4">🌟</div>
+              <h3 className="text-2xl font-black text-gray-800 mb-2">升级啦！</h3>
+              <p className="text-gray-500 font-bold mb-1">Lv.{levelUpInfo.fromLevel} → Lv.{levelUpInfo.toLevel}</p>
+              <p className="text-sm font-black text-blue-500 mb-8">进入{levelUpInfo.stage}</p>
+              <button
+                onClick={() => setLevelUpInfo(null)}
+                className="w-full py-4 bg-blue-500 text-white rounded-2xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100"
+              >
+                太棒了
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isManagingShop && (
           <motion.div
@@ -1129,13 +1230,7 @@ export default function App() {
                       <div>
                         <div className="text-sm font-bold text-gray-700">{item.name}</div>
                         <div className="text-[10px] text-gray-400">
-                          {item.price} 积分 | {
-                            item.type === 'food' ? '🍕 食物' : 
-                            item.type === 'clothes' ? '👗 衣物' : 
-                            item.type === 'head_accessory' ? '🎀 头饰' : 
-                            item.type === 'hand_accessory' ? '🪄 手饰' : 
-                            '🧸 玩具'
-                          }
+                          {item.price} 积分 | {getItemTypeLabel(item.type)} | {getItemEffectText(item)}
                         </div>
                       </div>
                     </div>
@@ -1183,8 +1278,22 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Add New Task Form */}
-              <div className="bg-blue-50 p-4 rounded-2xl mb-6 space-y-3">
+              {/* Add/Edit Task Form */}
+              <div className={`${editingTaskId ? 'bg-green-50' : 'bg-blue-50'} p-4 rounded-2xl mb-6 space-y-3 transition-colors`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-500">{editingTaskId ? '正在编辑任务' : '添加新任务'}</span>
+                  {editingTaskId && (
+                    <button
+                      onClick={() => {
+                        setEditingTaskId(null);
+                        setNewTask({ title: '', description: '', points: undefined, category: 'life', icon: '📝' });
+                      }}
+                      className="text-[10px] text-green-600 hover:underline"
+                    >
+                      取消编辑
+                    </button>
+                  )}
+                </div>
                 <div className="flex space-x-2">
                   <input
                     type="text"
@@ -1232,12 +1341,12 @@ export default function App() {
                     />
                   </div>
                   <button
-                    onClick={addTask}
+                    onClick={saveTask}
                     disabled={!newTask.title}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-600 disabled:opacity-50 flex items-center space-x-1"
+                    className={`${editingTaskId ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50 flex items-center space-x-1`}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>添加</span>
+                    {editingTaskId ? <CheckCircle2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{editingTaskId ? '保存' : '添加'}</span>
                   </button>
                 </div>
               </div>
@@ -1253,12 +1362,22 @@ export default function App() {
                         <div className="text-[10px] text-gray-400">{task.description}</div>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deleteTask(task.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => startEditingTask(task)}
+                        className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        title="编辑"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => deleteTask(task.id)}
+                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

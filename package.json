@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "publish": "powershell -ExecutionPolicy Bypass -File ./scripts/publish.ps1"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

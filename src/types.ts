@@ -33,6 +33,24 @@ export interface Item {
   };
 }
 
+export type ActivityLogType = 'feed' | 'play' | 'level' | 'task' | 'buy' | 'equip' | 'unequip';
+
+export interface ActivityLog {
+  date: string;
+  time: string;
+  type: ActivityLogType;
+  detail: string;
+  meta?: {
+    fromLevel?: number;
+    toLevel?: number;
+    points?: number;
+    hunger?: number;
+    happiness?: number;
+    exp?: number;
+    itemType?: Item['type'];
+  };
+}
+
 export interface UserStats {
   points: number;
   completedTaskIds: string[];
